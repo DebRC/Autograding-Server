@@ -12,17 +12,6 @@
 #define MAX_FILE_SIZE_BYTES 4
 #define MAX_CLIENTS 1
 
-void errorExit(char *msg)
-{
-    perror(msg);
-    exit(1);
-}
-
-void errorContinue(char *msg)
-{
-    perror(msg);
-}
-
 #define error(msg)   \
     {                \
         perror(msg); \
