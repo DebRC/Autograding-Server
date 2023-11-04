@@ -72,8 +72,8 @@ int send_file(int sockfd, char* file_path) {
 
 
 int main(int argc, char* argv[]) {
-    if (argc != 6) {
-        printf("Usage: %s <serverIP:port> <sourceCodeFileTobeGraded>  <loopNum> <sleepTimeSeconds> <time-out> \n", argv[0]);
+    if (argc != 5) {
+        printf("Usage: ./client <serverIP:port> <sourceCodeFileTobeGraded>  <loopNum> <sleepTimeSeconds> \n");
         return 1;
     }
 
@@ -81,7 +81,6 @@ int main(int argc, char* argv[]) {
     char* source_code_file = argv[2];
     int loop = atoi(argv[3]);
     int sleep_time = atoi(argv[4]);
-    int time_out_time = atoi(argv[5]);
 
     int client_socket;
     struct sockaddr_in server_addr;
@@ -89,12 +88,6 @@ int main(int argc, char* argv[]) {
     int successful_response = 0;
     int error_flag;
     int successful_request = 0;
-    int num_of_timeout = 0;
-
-    // Set Timeout timer
-    struct timeval timeout;
-    timeout.tv_sec = time_out_time;
-    timeout.tv_usec = 0;
 
     // Parse server IP and port
     char* server_ip = strtok(server_ip_port, ":");
@@ -157,12 +150,6 @@ int main(int argc, char* argv[]) {
             successful_request += 1;
         }
 
-        sleep(sleep_time);
-
-        if (setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0) {
-            perror("setsockopt failed");
-        }
-
         size_t rcv_bytes;
         //buffer for reading server response
         char buffer[BUFFER_SIZE];
@@ -187,30 +174,27 @@ int main(int argc, char* argv[]) {
         }
         if (rcv_bytes == 0) {
             printf("Successfully recieve response from server.\n");
+            
             // successful response
             successful_response += 1;
         }
         time_t diff = then - now;
-        // printf("Start Time: %lld\n\n", (long long) now);
-        // printf("Finish Time: %lld\n\n", (long long) then);
         printf("Response Time: %lld\n\n", (long long) diff);
+
         // total time taken
         total_time += (long long) diff;;
-        // printf("Loop: %d\n", loop);
         loop = loop - 1;
+
+        //closing the client socket
         close(client_socket);
+        sleep(sleep_time);
     }
     time_t loop_end = time(0);
-    // printf("Total time taken with in the loop: %f\n", (float)total_time);
 
+    // printing all necessary outputs
     printf("The number of Successful response: %d\n", successful_response);
     printf("Average response time: %f Seconds\n", total_time / (float)successful_response);
     printf("Total response time: %lld Seconds\n", total_time);
     printf("Total time for completing the loop: %lld Seconds\n", (long long) (loop_end - loop_start));
-    printf("The number of Successful request: %d\n", successful_response);
-    printf("The number of timeouts are: %d\n", num_of_timeout);
-    printf("The number of errors occurred: %d\n", successful_request - successful_response);
-    // Close the client socket
-
     return 0;
 }
