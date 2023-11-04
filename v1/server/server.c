@@ -10,7 +10,6 @@
 
 #define BUFFER_SIZE 1024
 #define MAX_FILE_SIZE_BYTES 4
-#define EndOfFile "EOF"
 #define MAX_CLIENTS 1
 
 void errorExit(char *msg)
@@ -62,7 +61,6 @@ int recv_file(int sockfd, char *file_path)
     printf("File size is: %d\n", file_size);
 
     size_t bytes_read = 0, total_bytes_read = 0;
-    ;
     while (true)
     {
         bytes_read = recv(sockfd, buffer, BUFFER_SIZE, 0);
