@@ -2,13 +2,19 @@
 
 # Checcking for correct arguments
 if [ $# -ne 3 ];then
-    echo "usage: ./loadtest.sh  <numClients>  <loopNum>  <sleepTimeSeconds>"
+    echo "usage: ./loadtest.sh <IP:Port> <testFile> <numClients>  <loopNum>  <sleepTimeSeconds>"
 fi
 
 # Variables used
-numOfClient=$1
-numOfLoop=$2
-sleepTime=$3
+ipPort=$1
+testFile=$2
+numOfClient=$3
+numOfLoop=$4
+sleepTime=$5
+
+mkdir -p client_logs
+mkdir -p client_logs/$numOfClient
+
 totalResponseTime=0.000000
 overall_throughput=0.000000
 overall_response_time=0.000000
@@ -17,7 +23,7 @@ total_response=0
 # Executing the client
 for ((num=1; num<=$numOfClient; num++)); do
     output_file="output_$num.txt"
-    ./client "127.0.0.1:5150" "sample.cpp" "$numOfLoop" "$sleepTime" > $output_file &
+    ./client "$ipPort" "$testFile" "$numOfLoop" "$sleepTime" > "./client_logs/$numOfClient/$output_file" &
     pids[num]=$!
 done
 
@@ -31,7 +37,7 @@ done
 # CALCULATING THE AVERAGE RESPONSE TIME
 for ((num=1; num<=$numOfClient; num++)); do
     # File name in the current directory
-    file_name="output_$num.txt"
+    file_name="./client_logs/$numOfClient/output_$num.txt"
 
     # Use grep and awk to search and extract the float value
     if grep -q "Average" "$file_name"; then
@@ -58,7 +64,7 @@ echo "Average response time: $avgResponseTime"
 # CALCULATING THE OVERALL THROUGHPUT
 for ((num=1; num<=$numOfClient; num++)); do
     # File name in the current directory
-    file_name="output_$num.txt"
+    file_name="./client_logs/$numOfClient/output_$num.txt"
 
     # Use grep and awk to search and extract the float value
     if grep -q "response" "$file_name"; then
