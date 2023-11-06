@@ -28,7 +28,7 @@ int send_file(int sockfd, char* file_path) {
 		//for finding file size in bytes
     fseek(file, 0L, SEEK_END); 
     int file_size = ftell(file);
-    printf("File size is: %d\n", file_size);
+    // printf("File size is: %d\n", file_size);
     
     //Reset file descriptor to beginning of file
     fseek(file, 0L, SEEK_SET);
@@ -161,7 +161,7 @@ int main(int argc, char* argv[]) {
             rcv_bytes = recv(client_socket, buffer, BUFFER_SIZE, 0);
             if (rcv_bytes <= 0)
                 break;
-            printf("rcv_bytes: %ld\n",rcv_bytes);
+            // printf("rcv_bytes: %ld\n",rcv_bytes);
             printf("Server Response: ");
             printf("%s\n", buffer);
             memset(buffer,0,BUFFER_SIZE);
