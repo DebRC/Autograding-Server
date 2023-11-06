@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
             successful_request += 1;
         }
 
-        size_t rcv_bytes;
+        int rcv_bytes;
         //buffer for reading server response
         char buffer[BUFFER_SIZE];
         memset(buffer,0,BUFFER_SIZE);
@@ -159,24 +159,25 @@ int main(int argc, char* argv[]) {
         {
             //read server response
             rcv_bytes = recv(client_socket, buffer, BUFFER_SIZE, 0);
-            if (rcv_bytes <= 0)
+            if (rcv_bytes <= 0) {
+                // printf("in if rcv_bytes: %d\n",rcv_bytes);
                 break;
-            // printf("rcv_bytes: %ld\n",rcv_bytes);
+            }
+            // printf("rcv_bytes: %d\n",rcv_bytes);
             printf("Server Response: ");
             printf("%s\n", buffer);
             memset(buffer,0,BUFFER_SIZE);
         }
 
+        // printf("rcv_bytes: %d\n",rcv_bytes);
+
         time_t then = time(0);
 
         if (rcv_bytes < 0) {
             perror("Time out : No response from server : ");
-            printf("\nSomething error has happened.\n");
         }
-        if (rcv_bytes == 0) {
-            printf("Successfully recieve response from server.\n");
-            
-            // successful response
+        else {
+            printf("response successful\n");
             successful_response += 1;
         }
         time_t diff = then - now;
@@ -194,7 +195,10 @@ int main(int argc, char* argv[]) {
 
     // printing all necessary outputs
     printf("The number of Successful response: %d\n", successful_response);
-    printf("Average response time: %f Seconds\n", total_time / (float)successful_response);
+    if (successful_response == 0) 
+        printf("Average response time: %f Seconds\n", (float)total_time);
+    else
+        printf("Average response time: %f Seconds\n", total_time / (float)successful_response);
     printf("Total response time: %lld Seconds\n", total_time);
     printf("Total time for completing the loop: %lld Seconds\n", (long long) (loop_end - loop_start));
     return 0;
