@@ -260,8 +260,11 @@ int grader(int clientSockFD)
     if (system(compileCommand) != 0)
     {
         n = send(clientSockFD, "COMPILER ERROR", 15, 0);
-        if (n >= 0)
+        sleep(1);
+        if (n >= 0){
             n=send_file(clientSockFD, compileOutputFileName);
+        }
+            
     }
     else if (system(runCommand) != 0)
     {
