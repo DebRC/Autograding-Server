@@ -1,8 +1,9 @@
 #!bin/bash
 
 # Checcking for correct arguments
-if [ $# -ne 3 ];then
+if [ $# -ne 5 ];then
     echo "usage: ./loadtest.sh <IP:Port> <testFile> <numClients>  <loopNum>  <sleepTimeSeconds>"
+    exit 1
 fi
 
 # Variables used
@@ -40,11 +41,11 @@ for ((num=1; num<=$numOfClient; num++)); do
     file_name="./client_logs/$numOfClient/output_$num.txt"
 
     # Use grep and awk to search and extract the float value
-    if grep -q "Average" "$file_name"; then
-        client_avg_response_time=$(grep "Average" "$file_name" | awk '{print $4}')
+    if grep -q "Average response time" "$file_name"; then
+        client_avg_response_time=$(grep "Average response time" "$file_name" | awk '{print $4}')
     fi
-    if grep -q "response" "$file_name"; then
-        num_of_response=$(grep "response" "$file_name" | awk '{print $6}')
+    if grep -q "The number of Successful response" "$file_name"; then
+        num_of_response=$(grep "The number of Successful response" "$file_name" | awk '{print $6}')
         # echo "Found no of response: $num_of_response"
     fi
     total_response=$(echo "scale=6; $total_response + $num_of_response" | bc -l)
@@ -67,13 +68,13 @@ for ((num=1; num<=$numOfClient; num++)); do
     file_name="./client_logs/$numOfClient/output_$num.txt"
 
     # Use grep and awk to search and extract the float value
-    if grep -q "response" "$file_name"; then
-        num_of_response=$(grep "response" "$file_name" | awk '{print $6}')
+    if grep -q "The number of Successful response" "$file_name"; then
+        num_of_response=$(grep "The number of Successful response" "$file_name" | awk '{print $6}')
         # echo "Found no of response: $num_of_response"
     fi
 
-    if grep -q "loop" "$file_name"; then
-        loop_time=$(grep "loop" "$file_name" | awk '{print $7}')
+    if grep -q "Total time for completing the loop" "$file_name"; then
+        loop_time=$(grep "Total time for completing the loop" "$file_name" | awk '{print $7}')
         # echo "Found loop time: $loop_time"
     fi
     ind_throughput=$(echo "scale=6; $num_of_response / $loop_time" | bc -l)
