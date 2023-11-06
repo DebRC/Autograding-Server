@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 num_of_clients = []
 response_time = []
+throughput_time = []
 
 with open(sys.argv[1],'r') as csv_file:
     content = csv.reader(csv_file)
@@ -11,6 +12,7 @@ with open(sys.argv[1],'r') as csv_file:
         if line[0].isdigit() == True:
             num_of_clients.append(int(line[0]))
             response_time.append(float(line[1]))
+            throughput_time.append(float(line[2]))
 
 
 # Clients Vs Throughput plot
