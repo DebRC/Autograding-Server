@@ -98,6 +98,7 @@ int main(int argc, char* argv[]) {
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = inet_addr(server_ip);
     server_addr.sin_port = htons(server_port);
+    // inet_pton(AF_INET.)
 
     // Starting loop.
     time_t loop_start = time(0);
