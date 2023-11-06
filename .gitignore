@@ -2,4 +2,5 @@ v1/server/logs/files
 v1/server/logs/outputs
 v1/client/client_logs
 v1/.vscode
-
+v1/client/avg_response_time.pdf
+v1/client/throughput.pdf
