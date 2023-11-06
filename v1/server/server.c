@@ -10,7 +10,7 @@
 
 #define BUFFER_SIZE 1024
 #define MAX_FILE_SIZE_BYTES 4
-#define MAX_CLIENTS 1
+#define MAX_CLIENTS 3
 
 #define error(msg)   \
     {                \
@@ -27,6 +27,8 @@
         perror(msg);       \
         continue;          \
     }
+
+int reqID = 0;
 
 int recv_file(int sockfd, char *file_path)
 {
@@ -234,7 +236,7 @@ char *make_output_diff_filename(int id){
 int grader(int clientSockFD)
 {
     int n;
-    char *programFileName = make_program_filename(clientSockFD);
+    char *programFileName = make_program_filename(reqID);
     if (recv_file(clientSockFD, programFileName) != 0)
     {
         free(programFileName);
@@ -247,15 +249,15 @@ int grader(int clientSockFD)
         errorExit("ERROR :: FILE SEND ERROR");
     }
 
-    char *execFileName = make_exec_filename(clientSockFD);
-    char *compileOutputFileName = make_compile_output_filename(clientSockFD);
-    char *runtimeOutputFileName = make_runtime_output_filename(clientSockFD);
-    char *outputFileName = make_output_filename(clientSockFD);
-    char *outputDiffFileName = make_output_diff_filename(clientSockFD);
+    char *execFileName = make_exec_filename(reqID);
+    char *compileOutputFileName = make_compile_output_filename(reqID);
+    char *runtimeOutputFileName = make_runtime_output_filename(reqID);
+    char *outputFileName = make_output_filename(reqID);
+    char *outputDiffFileName = make_output_diff_filename(reqID);
 
-    char *compileCommand = compile_command(clientSockFD, programFileName, execFileName);
-    char *runCommand = run_command(clientSockFD, execFileName);
-    char *outputCheckCommand = output_check_command(clientSockFD, outputFileName);
+    char *compileCommand = compile_command(reqID, programFileName, execFileName);
+    char *runCommand = run_command(reqID, execFileName);
+    char *outputCheckCommand = output_check_command(reqID, outputFileName);
 
     if (system(compileCommand) != 0)
     {
@@ -330,7 +332,7 @@ int main(int argc, char *argv[])
     printf("Server is Live on Port :: %d\n", serverPortNo);
 
     // Listening to the server socket
-    if (listen(serverSockFD, 5) < 0)
+    if (listen(serverSockFD, MAX_CLIENTS) < 0)
     {
         errorExit("ERROR :: Socket Listening Failed");
     }
@@ -342,6 +344,7 @@ int main(int argc, char *argv[])
         if (clientSockFD < 0)
             errorContinue("ERROR :: Client Socket Accept Failed");
         printf("Accepted Client Connection From :: %s with FD :: %d\n", inet_ntoa(clientAddr.sin_addr), clientSockFD);
+        reqID++;
         if (grader(clientSockFD) == 0)
         {
             printf("File Grade Successful for Client :: %s\n", inet_ntoa(clientAddr.sin_addr));
