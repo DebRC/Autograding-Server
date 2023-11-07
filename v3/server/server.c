@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include "circular_queue.h"
 
 #define BUFFER_SIZE 1024
 #define MAX_FILE_SIZE_BYTES 4
@@ -24,13 +25,6 @@
         return -1;     \
     }
 
-#define errorExitThread(msg, sockfd) \
-    {                          \
-        printf("ERROR :: Client File Cannot Be Graded for Client Socket with FD = %d\n", sockfd); \
-        closeSocket(sockfd);   \
-        perror(msg);   \
-        pthread_exit(NULL);     \
-    }
 #define errorContinue(msg) \
     {                      \
         perror(msg);       \
@@ -42,6 +36,12 @@
         close(clientSockFD);                                         \
         printf("Closed Client Socket with FD = %d\n", clientSockFD);                        \
     }
+
+// Request Queue
+CircularQueue requestQueue;
+pthread_mutex_t queueLock;
+pthread_cond_t queueCond;
+
 
 int recv_file(int sockfd, char *file_path)
 {
@@ -246,11 +246,24 @@ char *make_output_diff_filename(int id){
     return s;
 }
 
-void *grader(void *arg)
-{
-    int clientSockFD = *(int *)arg;
-    free(arg);
+// Function to count and write queue size to a file
+void* countQueueSize(void* arg) {
+    FILE* outputFile; // File to write queue size
+    outputFile = fopen("logs/queue_size.log", "w");
+    if (outputFile == NULL) {
+        error("Failed to open the output file");
+        return (void*)NULL;
+    }
+    while (1) {
+        int size = countItems(&requestQueue);
+        fprintf(outputFile, "%d\n", size);
+        fflush(outputFile); // Flush the file buffer to ensure data is written immediately
+        sleep(1); // Sleep for 10 seconds
+    }
+}
 
+int grader(int clientSockFD)
+{
     int threadID = pthread_self();
 
     int n;
@@ -258,13 +271,13 @@ void *grader(void *arg)
     if (recv_file(clientSockFD, programFileName) != 0)
     {
         free(programFileName);
-        errorExitThread("ERROR :: FILE RECV ERROR",clientSockFD);
+        errorExit("ERROR :: FILE RECV ERROR");
     }
     n = send(clientSockFD, "I got your code file for grading\n", 33, 0);
     if (n < 0)
     {
         free(programFileName);
-        errorExitThread("ERROR :: FILE SEND ERROR",clientSockFD);
+        errorExit("ERROR :: FILE SEND ERROR");
     }
 
     char *execFileName = make_exec_filename(threadID);
@@ -315,19 +328,39 @@ void *grader(void *arg)
     free(outputCheckCommand);
 
     if (n < 0)
-        errorExitThread("ERROR :: FILE SEND ERROR",clientSockFD);
+        errorExit("ERROR :: FILE SEND ERROR");
+    return 0;
+}
 
-    printf("SUCCESS :: Client File Graded for Client Socket with FD = %d\n", clientSockFD);
-    closeSocket(clientSockFD);
-    pthread_exit(NULL);
+void *handleClient(void *arg)
+{
+    while (1)
+    {
+        int clientSockFD;
+        // Lock the queue and get the next client socket to process
+        pthread_mutex_lock(&queueLock);
+        while (isEmpty(&requestQueue))
+        {
+            // Wait for a signal indicating that the queue is not empty
+            pthread_cond_wait(&queueCond, &queueLock);
+        }
+        clientSockFD = dequeue(&requestQueue);
+        pthread_mutex_unlock(&queueLock);
+        
+        printf("Client Socket with FD=%d is assigned a Thread\n", clientSockFD);
+        
+        if (grader(clientSockFD) == 0)
+            printf("SUCCESS :: Client File Graded for Client Socket with FD = %d\n", clientSockFD);
+        else
+            printf("ERROR :: Client File Cannot Be Graded for Client Socket with FD = %d\n", clientSockFD);
+        closeSocket(clientSockFD);  
+    }
 }
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2)
-    {
-        errorExit("ERROR :: No Port Provided");
-    }
+    if (argc != 4)
+        errorExit("Usage: <portNumber> <threadPoolSize> <requestQueueSize>");
 
     // Server and Client socket necessary variables
     int serverSockFD, serverPortNo;
@@ -351,6 +384,21 @@ int main(int argc, char *argv[])
     // Get address size
     int clientAddrLen = sizeof(clientAddr);
 
+    // Thread to count queue size
+    pthread_t queueCountThread;
+    pthread_create(&queueCountThread, NULL, countQueueSize, NULL);
+
+    int threadPoolSize = atoi(argv[2]);
+    pthread_t threads[threadPoolSize];
+
+    // Initialize the mutex and cond
+    pthread_mutex_init(&queueLock, NULL);
+    pthread_cond_init(&queueCond, NULL);
+
+    // Initialize Request Queue
+    int requestQueueSize=atoi(argv[3]);
+    initQueue(&requestQueue, requestQueueSize);
+
     // Binding the server socket
     if (bind(serverSockFD, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
     {
@@ -364,40 +412,41 @@ int main(int argc, char *argv[])
         errorExit("ERROR :: Socket Listening Failed");
     }
 
+    // Create thread pool
+    for (int i = 0; i < threadPoolSize; i++)
+    {
+        if (pthread_create(&threads[i], NULL, handleClient, NULL) != 0)
+        {
+            close(serverSockFD);
+            errorExit("ERROR :: Thread creation failed");
+        }
+    }
+
     while (1)
     {
-        int *clientSockFD = (int *)malloc(sizeof(int));
-        *clientSockFD = accept(serverSockFD, (struct sockaddr *)&clientAddr, &clientAddrLen);
-        if (*clientSockFD < 0){
-            close(*clientSockFD);
-            free(clientSockFD);
-            errorContinue("ERROR :: Client Socket Accept Failed");
-        }            
-        printf("Accepted Client Connection From :: %s with FD :: %d\n", inet_ntoa(clientAddr.sin_addr), *clientSockFD);
+        int clientSockFD = accept(serverSockFD, (struct sockaddr *)&clientAddr, &clientAddrLen);
         
-        // Thread variable
-        pthread_t thread;
-
-        // Create worker thread to handle client
-        if (pthread_create(&thread, NULL, grader, clientSockFD) != 0)
+        // If accept fails
+        if (clientSockFD < 0)
         {
-            close(*clientSockFD);
-            free(clientSockFD);
-            errorContinue("ERROR :: Client File Could Not be Graded");
+            errorContinue("ERROR :: Client Socket Accept Failed");
         }
-        pthread_detach(thread);
+
+        printf("Accepted Client Connection From %s with FD = %d\n", inet_ntoa(clientAddr.sin_addr), clientSockFD);
+
+        // Lock the queue and add the client socket for grading
+        pthread_mutex_lock(&queueLock);
+        if(isFull(&requestQueue)){
+            pthread_mutex_unlock(&queueLock);
+            closeSocket(clientSockFD);
+            errorContinue("ERROR :: Request Queue Full");
+        }
+        enqueue(&requestQueue,clientSockFD);
         
-        // reqID++;
-        // if (grader(clientSockFD) == 0)
-        // {
-        //     printf("File Grade Successful for Client :: %s\n", inet_ntoa(clientAddr.sin_addr));
-        // }
-        // else
-        // {
-        //     printf("File Grade Unsuccessful for Client :: %s\n", inet_ntoa(clientAddr.sin_addr));
-        // }
-        // close(clientSockFD);
-        // printf("Closed Client Connection From :: %s with FD :: %d\n", inet_ntoa(clientAddr.sin_addr), clientSockFD);
+        // Signal to wake up a waiting thread
+        pthread_cond_signal(&queueCond);
+        pthread_mutex_unlock(&queueLock);
+        
     }
 
     close(serverSockFD);
