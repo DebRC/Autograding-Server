@@ -13,3 +13,8 @@ v3/client/client_logs
 v3/.vscode
 v3/client/avg_response_time.pdf
 v3/client/throughput.pdf
+v4/server/logs
+v4/client/client_logs
+v4/.vscode
+v4/client/avg_response_time.pdf
+v4/client/throughput.pdf
