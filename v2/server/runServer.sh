@@ -12,4 +12,13 @@ mkdir -p logs/outputs
 
 gcc -o server server.c
 
+killChildren() {
+    pkill -P $$  # Send the termination signal to all child processes
+    exit 0  # Exit the script
+}
+
+trap killChildren SIGINT SIGTERM
+
+./utilization_script.sh $port &
+
 ./server $port
