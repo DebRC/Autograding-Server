@@ -1,4 +1,4 @@
-#!bin/bash
+#!/bin/bash
 
 # Checcking for correct arguments
 if [ $# -ne 6 ];then
