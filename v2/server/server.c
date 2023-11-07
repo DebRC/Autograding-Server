@@ -7,10 +7,11 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 #define BUFFER_SIZE 1024
 #define MAX_FILE_SIZE_BYTES 4
-#define MAX_CLIENTS 3
+#define MAX_CLIENTS 10
 
 #define error(msg)   \
     {                \
@@ -22,13 +23,25 @@
         perror(msg);   \
         return -1;     \
     }
+
+#define errorExitThread(msg, sockfd) \
+    {                          \
+        printf("ERROR :: Client File Cannot Be Graded for Client Socket with FD = %d\n", sockfd); \
+        closeSocket(sockfd);   \
+        perror(msg);   \
+        pthread_exit(NULL);     \
+    }
 #define errorContinue(msg) \
     {                      \
         perror(msg);       \
         continue;          \
     }
 
-int reqID = 0;
+#define closeSocket(clientSockFD)                                    \
+    {                                                                \
+        close(clientSockFD);                                         \
+        printf("Closed Client Socket with FD = %d\n", clientSockFD);                        \
+    }
 
 int recv_file(int sockfd, char *file_path)
 {
@@ -233,31 +246,36 @@ char *make_output_diff_filename(int id){
     return s;
 }
 
-int grader(int clientSockFD)
+void *grader(void *arg)
 {
+    int clientSockFD = *(int *)arg;
+    free(arg);
+
+    int threadID = pthread_self();
+
     int n;
-    char *programFileName = make_program_filename(reqID);
+    char *programFileName = make_program_filename(threadID);
     if (recv_file(clientSockFD, programFileName) != 0)
     {
         free(programFileName);
-        errorExit("ERROR :: FILE RECV ERROR");
+        errorExitThread("ERROR :: FILE RECV ERROR",clientSockFD);
     }
     n = send(clientSockFD, "I got your code file for grading\n", 33, 0);
     if (n < 0)
     {
         free(programFileName);
-        errorExit("ERROR :: FILE SEND ERROR");
+        errorExitThread("ERROR :: FILE SEND ERROR",clientSockFD);
     }
 
-    char *execFileName = make_exec_filename(reqID);
-    char *compileOutputFileName = make_compile_output_filename(reqID);
-    char *runtimeOutputFileName = make_runtime_output_filename(reqID);
-    char *outputFileName = make_output_filename(reqID);
-    char *outputDiffFileName = make_output_diff_filename(reqID);
+    char *execFileName = make_exec_filename(threadID);
+    char *compileOutputFileName = make_compile_output_filename(threadID);
+    char *runtimeOutputFileName = make_runtime_output_filename(threadID);
+    char *outputFileName = make_output_filename(threadID);
+    char *outputDiffFileName = make_output_diff_filename(threadID);
 
-    char *compileCommand = compile_command(reqID, programFileName, execFileName);
-    char *runCommand = run_command(reqID, execFileName);
-    char *outputCheckCommand = output_check_command(reqID, outputFileName);
+    char *compileCommand = compile_command(threadID, programFileName, execFileName);
+    char *runCommand = run_command(threadID, execFileName);
+    char *outputCheckCommand = output_check_command(threadID, outputFileName);
 
     if (system(compileCommand) != 0)
     {
@@ -297,9 +315,11 @@ int grader(int clientSockFD)
     free(outputCheckCommand);
 
     if (n < 0)
-        errorExit("ERROR :: FILE SEND ERROR");
+        errorExitThread("ERROR :: FILE SEND ERROR",clientSockFD);
 
-    return 0;
+    printf("SUCCESS :: Client File Graded for Client Socket with FD = %d\n", clientSockFD);
+    closeSocket(clientSockFD);
+    pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[])
@@ -324,6 +344,10 @@ int main(int argc, char *argv[])
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = INADDR_ANY;
     serverAddr.sin_port = htons(serverPortNo);
+
+    // Get address size
+    int clientAddrLen = sizeof(clientAddr);
+
     // Binding the server socket
     if (bind(serverSockFD, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
     {
@@ -339,22 +363,38 @@ int main(int argc, char *argv[])
 
     while (1)
     {
-        int clientAddrLen = sizeof(clientAddr);
-        int clientSockFD = accept(serverSockFD, (struct sockaddr *)&clientAddr, &clientAddrLen);
-        if (clientSockFD < 0)
+        int *clientSockFD = (int *)malloc(sizeof(int));
+        *clientSockFD = accept(serverSockFD, (struct sockaddr *)&clientAddr, &clientAddrLen);
+        if (*clientSockFD < 0){
+            close(*clientSockFD);
+            free(clientSockFD);
             errorContinue("ERROR :: Client Socket Accept Failed");
-        printf("Accepted Client Connection From :: %s with FD :: %d\n", inet_ntoa(clientAddr.sin_addr), clientSockFD);
-        reqID++;
-        if (grader(clientSockFD) == 0)
+        }            
+        printf("Accepted Client Connection From :: %s with FD :: %d\n", inet_ntoa(clientAddr.sin_addr), *clientSockFD);
+        
+        // Thread variable
+        pthread_t thread;
+
+        // Create worker thread to handle client
+        if (pthread_create(&thread, NULL, grader, clientSockFD) != 0)
         {
-            printf("File Grade Successful for Client :: %s\n", inet_ntoa(clientAddr.sin_addr));
+            close(*clientSockFD);
+            free(clientSockFD);
+            errorContinue("ERROR :: Client File Could Not be Graded");
         }
-        else
-        {
-            printf("File Grade Unsuccessful for Client :: %s\n", inet_ntoa(clientAddr.sin_addr));
-        }
-        close(clientSockFD);
-        printf("Closed Client Connection From :: %s with FD :: %d\n", inet_ntoa(clientAddr.sin_addr), clientSockFD);
+        pthread_detach(thread);
+        
+        // reqID++;
+        // if (grader(clientSockFD) == 0)
+        // {
+        //     printf("File Grade Successful for Client :: %s\n", inet_ntoa(clientAddr.sin_addr));
+        // }
+        // else
+        // {
+        //     printf("File Grade Unsuccessful for Client :: %s\n", inet_ntoa(clientAddr.sin_addr));
+        // }
+        // close(clientSockFD);
+        // printf("Closed Client Connection From :: %s with FD :: %d\n", inet_ntoa(clientAddr.sin_addr), clientSockFD);
     }
 
     close(serverSockFD);
