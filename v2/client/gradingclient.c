@@ -72,8 +72,8 @@ int send_file(int sockfd, char* file_path) {
 
 
 int main(int argc, char* argv[]) {
-    if (argc != 5) {
-        printf("Usage: ./client <serverIP:port> <sourceCodeFileTobeGraded>  <loopNum> <sleepTimeSeconds> \n");
+    if (argc != 6) {
+        printf("Usage: ./client <serverIP:port> <sourceCodeFileTobeGraded>  <loopNum> <sleepTimeSeconds> <time-out> \n");
         return 1;
     }
 
@@ -81,6 +81,7 @@ int main(int argc, char* argv[]) {
     char* source_code_file = argv[2];
     int loop = atoi(argv[3]);
     int sleep_time = atoi(argv[4]);
+    int time_out_time = atoi(argv[5]);
 
     int client_socket;
     struct sockaddr_in server_addr;
@@ -88,6 +89,13 @@ int main(int argc, char* argv[]) {
     int successful_response = 0;
     int error_flag;
     int successful_request = 0;
+    int num_of_timeout = 0;
+    int error_no = 0;
+
+    // Set Timeout timer
+    struct timeval timeout;
+    timeout.tv_sec = time_out_time;
+    timeout.tv_usec = 0;
 
     // Parse server IP and port
     char* server_ip = strtok(server_ip_port, ":");
@@ -110,6 +118,7 @@ int main(int argc, char* argv[]) {
             perror("Error creating socket");
             close(client_socket);
             loop = loop - 1;
+            error_no += 1;
             continue;
         }
 
@@ -128,6 +137,7 @@ int main(int argc, char* argv[]) {
                     close(client_socket);
                     loop = loop - 1;
                     server_error = 1;
+                    error_no += 1;
                     break;
                 }
             }
@@ -139,16 +149,27 @@ int main(int argc, char* argv[]) {
         }
 
         time_t now = time(0);
+
         // Opening the source code file
         if (send_file(client_socket, source_code_file) != 0) {
             printf("Error sending source file\n");
             close(client_socket);
             loop = loop - 1;
+            error_no += 1;
             continue;
         }
         else {
             printf("Code sent for grading, waiting for response\n");
             successful_request += 1;
+        }
+
+        // setting the timer
+        if (setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0) {
+            perror("setsockopt failed : ");
+            close(client_socket);
+            loop = loop - 1;
+            error_no += 1;
+            continue;
         }
 
         int rcv_bytes;
@@ -174,10 +195,17 @@ int main(int argc, char* argv[]) {
         time_t then = time(0);
 
         if (rcv_bytes < 0) {
-            perror("Time out : No response from server : ");
+            if (errno == EWOULDBLOCK || errno == EAGAIN) {
+                num_of_timeout += 1;
+                perror("Time out : No response from server : ");
+            }
+            else {
+                error_no += 1;
+                perror("No response from server : ");
+            }    
         }
         else {
-            printf("response successful\n");
+            printf("response successfully recieved\n");
             successful_response += 1;
         }
         time_t diff = then - now;
@@ -201,5 +229,8 @@ int main(int argc, char* argv[]) {
         printf("Average response time: %f Seconds\n", total_time / (float)successful_response);
     printf("Total response time: %lld Seconds\n", total_time);
     printf("Total time for completing the loop: %lld Seconds\n", (long long) (loop_end - loop_start));
+    printf("The number of Successful request: %d\n", successful_request);
+    printf("The number of errors occurred: %d\n", error_no);
+    printf("The number of timeouts are: %d\n", num_of_timeout);
     return 0;
 }
