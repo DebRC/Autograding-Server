@@ -339,6 +339,9 @@ int main(int argc, char *argv[])
     if (serverSockFD < 0)
         errorExit("ERROR :: Socket Opening Failed");
 
+    if (setsockopt(serverSockFD, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
+        error("ERROR :: setsockopt (SO_REUSEADDR) Failed");
+
     bzero((char *)&serverAddr, sizeof(serverAddr));
     serverPortNo = atoi(argv[1]);
     serverAddr.sin_family = AF_INET;
