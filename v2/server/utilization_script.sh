@@ -36,5 +36,5 @@ while true; do
     fi
 
     echo "" >> $snapshotFile
-    sleep 10
+    sleep 5
 done
