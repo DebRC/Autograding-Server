@@ -22,7 +22,7 @@ plt.xlabel("Number of Clients")
 plt.ylabel("Throughput")
 plt.legend()
 # plt.show()
-plt.savefig("throughput.pdf", bbox_inches='tight')
+plt.savefig("./observation/throughput.pdf", bbox_inches='tight')
 plt.close()
 
 # Clients Vs Response Time plot
@@ -32,6 +32,6 @@ plt.xlabel("Number of Clients")
 plt.ylabel("Average Response Time")
 plt.legend()
 # plt.show()
-plt.savefig("avg_response_time.pdf", bbox_inches='tight')
+plt.savefig("./observation/avg_response_time.pdf", bbox_inches='tight')
 plt.close()
 
