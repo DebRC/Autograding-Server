@@ -40,8 +40,8 @@ for ((i=1; i<=$numOfClient; i++)); do
 done
 
 PID=$(ps -eLf | grep utilizationScript.sh | head -1 | awk '{print $2}')
-echo "PID: $PID"
-kill -9 $PID 
+# echo "PID: $PID"
+kill -9 $PID  &> /dev/null 
 
 vmstat 1 2 | tail -1 | awk '{print $13}' >> cpu_utilization_snapshots.txt
 ps -eLf | grep "./server $port_no" | head -1 | awk '{print $6}' >> thread_count_snapshots.txt
@@ -99,7 +99,11 @@ for ((num=1; num<=$numOfClient; num++)); do
         loop_time=$(grep "Total time for completing the loop" "$file_name" | awk '{print $7}')
         # echo "Found loop time: $loop_time"
     fi
-    ind_throughput=$(echo "scale=2; $num_of_response / $loop_time" | bc -l)
+    if [ $loop_time -eq 0 ]; then
+        ind_throughput=$num_of_request
+    else 
+        ind_throughput=$(echo "scale=2; $num_of_response / $loop_time" | bc -l)
+    fi
     overall_throughput=$(echo "scale=2; $overall_throughput + $ind_throughput" | bc -l)
 done
 
@@ -127,12 +131,9 @@ for ((num=1; num<=$numOfClient; num++)); do
         loop_time=0
     fi
     if [ $loop_time -eq 0 ]; then
-        ind_request_rate=0
+        ind_request_rate=$num_of_request
     else 
         ind_request_rate=$(echo "scale=2; $num_of_request / $loop_time" | bc -l)
-        # echo "Number of response: $num_of_request"
-        # echo "loop time: $loop_time"
-        # echo "Individual Request rate: $ind_request_rate"
     fi
     overall_request_rate=$(echo "scale=2; $overall_request_rate + $ind_request_rate" | bc -l)
 done
@@ -163,14 +164,14 @@ for ((num=1; num<=$numOfClient; num++)); do
         loop_time=0
     fi
     if [ $loop_time -eq 0 ]; then
-        num_of_error=0
+        ind_error_rate=$num_of_error
     else 
         ind_error_rate=$(echo "scale=2; $num_of_error / $loop_time" | bc -l)
-        total_error=$(echo "scale=2; $total_error + $num_of_error" | bc -l)
         # echo "Number of response: $num_of_response"
         # echo "loop time: $loop_time"
         # echo "Individual Throughput: $ind_throughput"
     fi
+    total_error=$(echo "scale=2; $total_error + $num_of_error" | bc -l)
     overall_error_rate=$(echo "scale=2; $overall_error_rate + $ind_error_rate" | bc -l)
 done
 
@@ -201,14 +202,14 @@ for ((num=1; num<=$numOfClient; num++)); do
         loop_time=0
     fi
     if [ $loop_time -eq 0 ]; then
-        num_of_timeout=0
+        ind_timeout_rate=$num_of_timeout
     else 
         ind_timeout_rate=$(echo "scale=2; $num_of_timeout / $loop_time" | bc -l)
-        total_time_out=$(echo "scale=2; $total_time_out + $num_of_timeout" | bc -l)
         # echo "Number of response: $num_of_response"
         # echo "loop time: $loop_time"
         # echo "Individual Throughput: $ind_throughput"
     fi
+    total_time_out=$(echo "scale=2; $total_time_out + $num_of_timeout" | bc -l)
     overall_timeout_rate=$(echo "scale=2; $overall_timeout_rate + $ind_timeout_rate" | bc -l)
 done
 
