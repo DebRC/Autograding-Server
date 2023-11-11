@@ -119,6 +119,7 @@ int main(int argc, char* argv[]) {
             close(client_socket);
             loop = loop - 1;
             error_no += 1;
+            sleep(1);
             continue;
         }
 
@@ -145,6 +146,7 @@ int main(int argc, char* argv[]) {
 
         // If error happens while connecting then continue to loop
         if(server_error == 1) {
+            sleep(1);
             continue;
         }
 
@@ -156,6 +158,7 @@ int main(int argc, char* argv[]) {
             close(client_socket);
             loop = loop - 1;
             error_no += 1;
+            sleep(1);
             continue;
         }
         else {
@@ -169,6 +172,7 @@ int main(int argc, char* argv[]) {
             close(client_socket);
             loop = loop - 1;
             error_no += 1;
+            sleep(1);
             continue;
         }
 
