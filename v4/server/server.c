@@ -493,9 +493,9 @@ int createNewRequest(int clientSockFD)
     }
     free(programFileName);
 
-    n = send(clientSockFD, "I got your code file for grading\n", 33, MSG_NOSIGNAL);
-    if (n < 0)
-        errorExit("ERROR :: FILE SEND ERROR");
+    // n = send(clientSockFD, "I got your code file for grading\n", 33, MSG_NOSIGNAL);
+    // if (n < 0)
+    //     errorExit("ERROR :: FILE SEND ERROR");
 
     n = send(clientSockFD, &requestID, sizeof(requestID), MSG_NOSIGNAL);
     if (n < 0)
@@ -521,7 +521,6 @@ int createNewRequest(int clientSockFD)
     {
         errorExit("ERROR :: File Wrtie Error");
     }
-
     return 0;
 }
 
