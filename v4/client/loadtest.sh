@@ -92,7 +92,11 @@ for ((num=1; num<=$numOfClient; num++)); do
         loop_time=$(grep "Total time for completing the loop" "$file_name" | awk '{print $7}')
         # echo "Found loop time: $loop_time"
     fi
-    ind_throughput=$(echo "scale=2; $num_of_response / $loop_time" | bc -l)
+    if [ $loop_time -eq 0 ]; then
+        ind_throughput=$num_of_response
+    else 
+        ind_throughput=$(echo "scale=2; $num_of_response / $loop_time" | bc -l)
+    fi
     overall_throughput=$(echo "scale=2; $overall_throughput + $ind_throughput" | bc -l)
 done
 
@@ -156,14 +160,11 @@ for ((num=1; num<=$numOfClient; num++)); do
         loop_time=0
     fi
     if [ $loop_time -eq 0 ]; then
-        num_of_error=0
+        ind_error_rate=$num_of_error
     else 
         ind_error_rate=$(echo "scale=2; $num_of_error / $loop_time" | bc -l)
-        total_error=$(echo "scale=2; $total_error + $num_of_error" | bc -l)
-        # echo "Number of response: $num_of_response"
-        # echo "loop time: $loop_time"
-        # echo "Individual Throughput: $ind_throughput"
     fi
+    total_error=$(echo "scale=2; $total_error + $num_of_error" | bc -l)
     overall_error_rate=$(echo "scale=2; $overall_error_rate + $ind_error_rate" | bc -l)
 done
 
