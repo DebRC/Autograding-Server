@@ -11,5 +11,4 @@ v2/client/throughput.pdf
 v3/server/logs
 v3/client/client_logs
 v3/.vscode
-v3/client/avg_response_time.pdf
-v3/client/throughput.pdf
+v3/client/observation
