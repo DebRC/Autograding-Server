@@ -12,3 +12,5 @@ v3/server/logs
 v3/client/client_logs
 v3/.vscode
 v3/client/observation
+v3/client/cpu_utilization_snapshots.txt
+v3/client/thread_count_snapshots.txt
