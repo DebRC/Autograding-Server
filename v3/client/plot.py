@@ -9,6 +9,8 @@ overall_request_rate = []
 overall_error_rate = []
 overall_timeout_rate = []
 request_rate_sent = []
+average_thread = []
+average_cpu = []
 
 with open(sys.argv[1],'r') as csv_file:
     content = csv.reader(csv_file)
@@ -21,6 +23,8 @@ with open(sys.argv[1],'r') as csv_file:
             overall_error_rate.append(float(line[4]))
             overall_timeout_rate.append(float(line[5]))
             request_rate_sent.append(float(line[6]))
+            average_thread.append(float(line[7]))
+            average_cpu.append(float(line[8]))
 
 
 # Clients Vs Throughput plot
@@ -95,3 +99,24 @@ plt.close()
 
 
 
+# client Vs Average Threads
+plt.figure(figsize=(8,6))
+plt.plot(num_of_clients, average_thread, label = "Client Vs Average Threads")
+plt.xlabel("Number of Clients")
+plt.ylabel("Average Threads")
+plt.legend()
+# plt.show()
+plt.savefig("./observation/average_thread.pdf",bbox_inches='tight')
+plt.close()
+
+
+
+# client Vs Average CPU
+plt.figure(figsize=(8,6))
+plt.plot(num_of_clients, average_cpu, label = "Client Vs Average CPU")
+plt.xlabel("Number of Clients")
+plt.ylabel("Average CPU")
+plt.legend()
+# plt.show()
+plt.savefig("./observation/average_cpu.pdf",bbox_inches='tight')
+plt.close()
