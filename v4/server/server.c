@@ -271,18 +271,15 @@ void *countQueueSize(void *arg)
 int writeStatusToFile(int requestID, char *status, char *remarks)
 {
     // Open the file in append mode
-    pthread_mutex_lock(&fileLock);
     FILE *file = fopen("request_status.csv", "a");
     if (file == NULL)
     {
-        pthread_mutex_unlock(&fileLock);
         errorExit("Error opening file");
     }
     // Append request ID and status to the file
     fprintf(file, "%d,%s,%s\n", requestID, status, remarks);
     // Close the file
     fclose(file);
-    pthread_mutex_unlock(&fileLock);
     return 0;
 }
 
@@ -290,11 +287,9 @@ int writeStatusToFile(int requestID, char *status, char *remarks)
 int updateStatusToFile(int requestID, char *newStatus, char *remarks)
 {
     // Open the file in read mode
-    pthread_mutex_lock(&fileLock);
     FILE *file = fopen("request_status.csv", "r");
     if (file == NULL)
     {
-        pthread_mutex_unlock(&fileLock);
         errorExit("Error opening file");
     }
 
@@ -303,7 +298,6 @@ int updateStatusToFile(int requestID, char *newStatus, char *remarks)
     if (tempFile == NULL)
     {
         fclose(file);
-        pthread_mutex_unlock(&fileLock);
         errorExit("Error opening temp file");
     }
 
@@ -335,18 +329,14 @@ int updateStatusToFile(int requestID, char *newStatus, char *remarks)
     // Remove the original file
     if (remove("request_status.csv") != 0)
     {
-        pthread_mutex_unlock(&fileLock);
         errorExit("Error removing original file");
     }
 
     // Rename the temporary file to the original file
     if (rename("temp_status.csv", "request_status.csv") != 0)
     {
-        pthread_mutex_unlock(&fileLock);
         errorExit("Error renaming temp file");
     }
-
-    pthread_mutex_unlock(&fileLock);
 
     if (requestFound)
     {
@@ -362,11 +352,9 @@ int updateStatusToFile(int requestID, char *newStatus, char *remarks)
 char *readStatusFromFile(int requestID)
 {
     // Open the file in read mode
-    pthread_mutex_lock(&fileLock);
     FILE *file = fopen("request_status.csv", "r");
     if (file == NULL)
     {
-        pthread_mutex_unlock(&fileLock);
         error("Error opening file");
         return NULL;
     }
@@ -384,14 +372,12 @@ char *readStatusFromFile(int requestID)
             token = strtok(NULL, ",");
             char *status = strdup(token); // Dynamically allocate memory for the status
             fclose(file);
-            pthread_mutex_unlock(&fileLock);
             return status; // Return the dynamically allocated status
         }
     }
 
     // Request ID not found
     fclose(file);
-    pthread_mutex_unlock(&fileLock);
     return NULL; // Return NULL to indicate not found
 }
 
@@ -410,21 +396,29 @@ int grader(int requestID)
 
     if (system(compileCommand) != 0)
     {
+        pthread_mutex_lock(&fileLock);
         updateStatusToFile(requestID, "2", "COMPILER ERROR");
+        pthread_mutex_unlock(&fileLock);
     }
     else if (system(runCommand) != 0)
     {
+        pthread_mutex_lock(&fileLock);
         updateStatusToFile(requestID, "2", "RUNTIME ERROR");
+        pthread_mutex_unlock(&fileLock);
     }
     else
     {
         if (system(outputCheckCommand) != 0)
         {
+            pthread_mutex_lock(&fileLock);
             updateStatusToFile(requestID, "2", "OUTPUT ERROR");
+            pthread_mutex_unlock(&fileLock);
         }
         else
         {
+            pthread_mutex_lock(&fileLock);
             updateStatusToFile(requestID, "2", "PROGRAM RAN");
+            pthread_mutex_unlock(&fileLock);
         }
     }
 
@@ -458,7 +452,9 @@ void *handleClient(void *arg)
 
         printf("Request ID=%d is assigned a Thread\n", requestID);
 
+        pthread_mutex_lock(&fileLock);
         updateStatusToFile(requestID, "1", "Thread Assigned");
+        pthread_mutex_unlock(&fileLock);
 
         if (grader(requestID) == 0)
             printf("SUCCESS :: File Graded for Request ID = %d\n", requestID);
@@ -467,14 +463,20 @@ void *handleClient(void *arg)
     }
 }
 
-// Function to generate a unique request ID based on current time
+// Function to generate a unique 6-digit request ID based on current time
 int generateUniqueRequestID()
 {
     // Get current time
     time_t currentTime = time(NULL);
 
-    // Generate unique request ID by combining time and a random number
-    int requestID = (int)currentTime * 1000 + rand() % 1000;
+    // Use only the last 6 digits of the current time
+    int timePart = (int)(currentTime % 1000000);
+
+    // Generate a random 3-digit number
+    int randomPart = rand() % 1000;
+
+    // Combine the time and random parts to form a 6-digit request ID
+    int requestID = timePart * 1000 + randomPart;
 
     return requestID;
 }
@@ -512,7 +514,10 @@ int createNewRequest(int clientSockFD)
     pthread_cond_signal(&queueCond);
     pthread_mutex_unlock(&queueLock);
 
-    if (writeStatusToFile(requestID, "0","IN QUEUE") != 0)
+    pthread_mutex_lock(&fileLock);
+    n = writeStatusToFile(requestID, "0", "IN QUEUE");
+    pthread_mutex_unlock(&fileLock);
+    if (n != 0)
     {
         errorExit("ERROR :: File Wrtie Error");
     }
@@ -529,7 +534,9 @@ int checkStatusRequest(int clientSockFD)
     {
         errorExit("ERROR: RECV ERROR");
     }
+    pthread_mutex_lock(&fileLock);
     char *status = readStatusFromFile(requestID);
+    pthread_mutex_unlock(&fileLock);
     if (status == NULL)
     {
         n = send(clientSockFD, "INVALID REQUEST ID", 20, MSG_NOSIGNAL);
@@ -555,7 +562,7 @@ int getRequest(int clientSockFD)
         return -1;
     if (strcmp(buffer, "new") == 0)
         return createNewRequest(clientSockFD);
-    else if (strcmp(buffer, "status_check") == 0)
+    else if (strcmp(buffer, "status") == 0)
         return checkStatusRequest(clientSockFD);
     return -1;
 }
