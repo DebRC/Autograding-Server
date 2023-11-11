@@ -25,6 +25,8 @@ overall_request_rate=0.00
 overall_timeout_rate=0.00
 total_response=0
 
+bash utilizationScript.sh 8080 &
+
 # Executing the client
 for ((num=1; num<=$numOfClient; num++)); do
     output_file="output_$num.txt"
@@ -37,7 +39,9 @@ for ((i=1; i<=$numOfClient; i++)); do
     wait "${pids[$i]}"
 done
 
-
+PID=$(ps -eLf | grep utilizationScript.sh | head -1 | awk '{print $2}')
+echo "PID: $PID"
+kill -9 $PID
 
 
 # CALCULATING THE AVERAGE RESPONSE TIME
