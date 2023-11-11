@@ -39,7 +39,7 @@ int send_file(int sockfd, char* file_path) {
     memcpy(file_size_bytes, &file_size, sizeof(file_size));
     
     //send file size to server, return -1 if error
-    if (send(sockfd, &file_size_bytes, sizeof(file_size_bytes), 0) == -1)
+    if (send(sockfd, &file_size_bytes, sizeof(file_size_bytes), MSG_NOSIGNAL) == -1)
     {
         perror("Error sending file size");
         fclose(file);
@@ -54,7 +54,7 @@ int send_file(int sockfd, char* file_path) {
         size_t bytes_read = fread(buffer, 1, BUFFER_SIZE -1, file);
         
      		//send to server
-        if (send(sockfd, buffer, bytes_read+1, 0) == -1)
+        if (send(sockfd, buffer, bytes_read+1, MSG_NOSIGNAL) == -1)
         {
             perror("Error sending file data");
             fclose(file);
