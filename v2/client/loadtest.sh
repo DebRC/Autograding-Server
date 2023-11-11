@@ -39,12 +39,12 @@ for ((i=1; i<=$numOfClient; i++)); do
     wait "${pids[$i]}"
 done
 
-PID=$(ps -eLf | grep utilizationScript.sh | head -1 | awk '{print $2}')
-# echo "PID: $PID"
-kill -9 $PID  &> /dev/null 
+# PID=$(ps -eLf | grep utilizationScript.sh | head -1 | awk '{print $2}')
+# # echo "PID: $PID"
+# kill -9 $PID  &> /dev/null 
 
-vmstat 1 2 | tail -1 | awk '{print $13}' >> cpu_utilization_snapshots.txt
-ps -eLf | grep "./server $port_no" | head -1 | awk '{print $6}' >> thread_count_snapshots.txt
+# vmstat 1 2 | tail -1 | awk '{print $13}' >> cpu_utilization_snapshots.txt
+# ps -eLf | grep "./server $port_no" | head -1 | awk '{print $6}' >> thread_count_snapshots.txt
 
 
 # CALCULATING THE AVERAGE RESPONSE TIME
@@ -229,30 +229,32 @@ echo "Overall Request Rate Sent: $request_rate_sent"
 
 
 # AVERAGE NO OF ACTIVE THREADS
-sum=0
-count=0
-while read -r line; do
-  sum=$((sum + line))
-  count=$((count + 1))
-done < thread_count_snapshots.txt
-average_thread=$(echo "scale=2; $sum / $count" | bc -l)
-echo "Average active threads: $average_thread"
-> thread_count_snapshots.txt
+average_thread=0
+# sum=0
+# count=0
+# while read -r line; do
+#   sum=$((sum + line))
+#   count=$((count + 1))
+# done < thread_count_snapshots.txt
+# average_thread=$(echo "scale=2; $sum / $count" | bc -l)
+# echo "Average active threads: $average_thread"
+# > thread_count_snapshots.txt
 
 
 
 
 
 # AVERAGE NO OF CPU UTILIZATION
-sum=0
-count=0
-while read -r line; do
-  sum=$((sum + line))
-  count=$((count + 1))
-done < cpu_utilization_snapshots.txt
-average_cpu=$(echo "scale=2; $sum / $count" | bc -l)
-echo "Average cpu utilization(%): $average_cpu"
-> cpu_utilization_snapshots.txt
+average_cpu=0
+# sum=0
+# count=0
+# while read -r line; do
+#   sum=$((sum + line))
+#   count=$((count + 1))
+# done < cpu_utilization_snapshots.txt
+# average_cpu=$(echo "scale=2; $sum / $count" | bc -l)
+# echo "Average cpu utilization(%): $average_cpu"
+# > cpu_utilization_snapshots.txt
 
 
 # Append the values to a csv file using >>
