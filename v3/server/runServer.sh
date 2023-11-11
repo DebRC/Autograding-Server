@@ -13,7 +13,7 @@ mkdir -p logs
 mkdir -p logs/files
 mkdir -p logs/outputs
 
-gcc -o server server.c circular_queue.c
+gcc -o server server.c helper/circular_queue.c helper/helper.c
 
 if [[ $core -eq 1 ]]; then
     taskset -c 0 ./server $port $threadPoolSize $requestQueueSize
@@ -35,6 +35,6 @@ killChildren() {
 
 trap killChildren SIGINT SIGTERM
 
-./utilization_script.sh $port &
+bash utilization_script.sh $port &
 
 ./server $port
