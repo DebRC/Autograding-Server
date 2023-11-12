@@ -1,0 +1,6 @@
+0,Request Added to Queue
+1,Request Assigned a Thread (Grading in Progress)
+2,Grading Complete (COMPILER ERROR)
+3,Grading Complete (RUNTIME ERROR)
+4,Grading Complete (OUTPUT ERROR)
+5,Grading Complete (PROGRAM RAN)
