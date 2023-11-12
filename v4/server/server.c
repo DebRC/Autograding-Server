@@ -403,7 +403,7 @@ int grader(int requestID)
     else if (system(runCommand) != 0)
     {
         pthread_mutex_lock(&fileLock);
-        updateStatusToFile(requestID, "2", "RUNTIME ERROR");
+        updateStatusToFile(requestID, "3", "RUNTIME ERROR");
         pthread_mutex_unlock(&fileLock);
     }
     else
@@ -411,13 +411,13 @@ int grader(int requestID)
         if (system(outputCheckCommand) != 0)
         {
             pthread_mutex_lock(&fileLock);
-            updateStatusToFile(requestID, "2", "OUTPUT ERROR");
+            updateStatusToFile(requestID, "4", "OUTPUT ERROR");
             pthread_mutex_unlock(&fileLock);
         }
         else
         {
             pthread_mutex_lock(&fileLock);
-            updateStatusToFile(requestID, "2", "PROGRAM RAN");
+            updateStatusToFile(requestID, "5", "PROGRAM RAN");
             pthread_mutex_unlock(&fileLock);
         }
     }
@@ -519,8 +519,10 @@ int createNewRequest(int clientSockFD)
     pthread_mutex_unlock(&fileLock);
     if (n != 0)
     {
-        errorExit("ERROR :: File Wrtie Error");
+        errorExit("ERROR :: File Write Error");
     }
+
+    printf("Client with FD = %d is given Request ID = %d\n",clientSockFD,requestID);
 
     return 0;
 }
@@ -549,6 +551,9 @@ int checkStatusRequest(int clientSockFD)
     {
         errorExit("ERROR: SEND ERROR");
     }
+
+    printf("Status Returned for Client with FD = %d with Request ID = %d\n",clientSockFD,requestID);
+
     return 0;
 }
 
