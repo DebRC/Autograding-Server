@@ -188,6 +188,46 @@ char *readRemarksFromFile(char *statusID)
     return NULL; // Return NULL to indicate not found
 }
 
+int faultTolerance()
+{
+    printf("RUNNING FAULT TOLERANCE ::\n");
+    // Open the file in read mode
+    FILE *file = fopen("request_status.csv", "r");
+    if (file == NULL)
+    {
+        errorExit("Error Opening file");
+    }
+    // Search for the request ID in the file
+    char line[256]; // Adjust the size as needed
+    while (fgets(line, sizeof(line), file) != NULL)
+    {
+        // printf("%s\n", line);
+        int requestID = atoi(strtok(line, ","));
+        char *status = strtok(NULL, ",");
+        // printf("%d :: %s\n", requestID, status);
+        status[strcspn(status, "\n")] = '\0';
+        if ((strcmp(status, "0") == 0) || (strcmp(status, "1") == 0))
+        {
+            // Lock the queue and add the client socket for grading
+            pthread_mutex_lock(&queueLock);
+            if (isFull(&requestQueue))
+            {
+                pthread_mutex_unlock(&queueLock);
+                errorExit("ERROR :: Request Queue Full");
+            }
+
+            enqueue(&requestQueue, requestID);
+            printf("Request ID = %d, is Re-Added to Queue.\n", requestID);
+
+            // Signal to wake up a waiting thread
+            pthread_cond_signal(&queueCond);
+            pthread_mutex_unlock(&queueLock);
+        }
+    }
+    printf("FAULT TOLERANCE DONE\n");
+    return 0;
+}
+
 int grader(int requestID)
 {
     char *programFileName = make_program_filename(requestID);
@@ -311,18 +351,18 @@ int createNewRequest(int clientSockFD)
         errorExit("ERROR :: Request Queue Full");
     }
 
+    enqueue(&requestQueue, requestID);
     printf("Client with FD = %d is given Request ID = %d\n", clientSockFD, requestID);
 
-    enqueue(&requestQueue, requestID);
     // Signal to wake up a waiting thread
     pthread_cond_signal(&queueCond);
     pthread_mutex_unlock(&queueLock);
-    
+
     char requestIDString[30];
     // Convert integer to string
     sprintf(requestIDString, "Your RequestID is : %d\n", requestID);
 
-    n = send(clientSockFD, requestIDString, sizeof(requestIDString), MSG_NOSIGNAL);
+    n = send(clientSockFD, requestIDString, strlen(requestIDString), MSG_NOSIGNAL);
     if (n < 0)
         errorExit("ERROR :: FILE SEND ERROR");
 
@@ -355,25 +395,24 @@ int checkStatusRequest(int clientSockFD)
     else
     {
         char *remarks = readRemarksFromFile(status);
-        printf("Return Remarks :: %s\n", remarks);
         n = send(clientSockFD, remarks, strlen(remarks), MSG_NOSIGNAL);
         if (n < 0)
         {
             errorExit("ERROR: SEND ERROR");
         }
-        if (strcmp(status, "2")==0)
+        if (strcmp(status, "2") == 0)
         {
             char *compileOutputFileName = make_compile_output_filename(requestID);
             n = send_file(clientSockFD, compileOutputFileName);
             free(compileOutputFileName);
         }
-        else if (strcmp(status, "3")==0)
+        else if (strcmp(status, "3") == 0)
         {
             char *runtimeOutputFileName = make_runtime_output_filename(requestID);
             n = send_file(clientSockFD, runtimeOutputFileName);
             free(runtimeOutputFileName);
         }
-        else if (strcmp(status, "4")==0)
+        else if (strcmp(status, "4") == 0)
         {
             char *outputDiffFileName = make_output_diff_filename(requestID);
             n = send_file(clientSockFD, outputDiffFileName);
@@ -452,6 +491,10 @@ int main(int argc, char *argv[])
     int requestQueueSize = atoi(argv[3]);
     initQueue(&requestQueue, requestQueueSize);
 
+    if(faultTolerance()<0){
+        errorExit("ERROR :: While running fault tolerance");
+    }
+
     // Binding the server socket
     if (bind(serverSockFD, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
     {
@@ -464,6 +507,8 @@ int main(int argc, char *argv[])
     {
         errorExit("ERROR :: Socket Listening Failed");
     }
+
+
 
     // Create thread pool
     for (int i = 0; i < threadPoolSize; i++)
