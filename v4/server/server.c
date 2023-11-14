@@ -70,13 +70,15 @@ int updateStatusToFile(int requestID, char *newStatus)
         errorExit("Error opening temp file");
     }
 
-    // Search for the request ID in the file and update the status
+    // // Search for the request ID in the file and update the status
     char line[256]; // Adjust the size as needed
     int requestFound = 0;
     while (fgets(line, sizeof(line), file) != NULL)
     {
+        // printf("%s\n", line);
         char *token = strtok(line, ",");
-        char *s1;
+        // printf("%s\n", token);
+        char s1[11];
         sprintf(s1, "%d", requestID);
         if (token != NULL && strcmp(token, s1) == 0)
         {
@@ -86,8 +88,9 @@ int updateStatusToFile(int requestID, char *newStatus)
         }
         else
         {
+            token = strtok(NULL, " ");
             // Copy the line as is to the temporary file
-            fprintf(tempFile, "%s", line);
+            fprintf(tempFile, "%s,%s", line, token);
         }
     }
 
@@ -106,7 +109,6 @@ int updateStatusToFile(int requestID, char *newStatus)
     {
         errorExit("Error renaming temp file");
     }
-
     if (requestFound)
     {
         return 0; // Update successful
@@ -133,13 +135,14 @@ char *readStatusFromFile(int requestID)
     while (fgets(line, sizeof(line), file) != NULL)
     {
         char *token = strtok(line, ",");
-        char *s1;
+        char s1[11];
         sprintf(s1, "%d", requestID);
         if (token != NULL && strcmp(token, s1) == 0)
         {
             // Found the request ID, retrieve the status
             token = strtok(NULL, ",");
             char *status = strdup(token); // Dynamically allocate memory for the status
+            status[strcspn(status, "\n")] = '\0';
             fclose(file);
             return status; // Return the dynamically allocated status
         }
@@ -165,12 +168,16 @@ char *readRemarksFromFile(char *statusID)
     char line[256]; // Adjust the size as needed
     while (fgets(line, sizeof(line), file) != NULL)
     {
+        // printf("Status :: %s", statusID);
         char *token = strtok(line, ",");
-        if (token != NULL && strcmp(token, statusID) == 0)
+        // printf("Token 1 :: %s\n", token);
+        if (token != NULL && (strcmp(token, statusID) == 0))
         {
             // Found the request ID, retrieve the status
             token = strtok(NULL, ",");
+            // printf("Token 2 :: %s", token);
             char *remarks = strdup(token); // Dynamically allocate memory for the status
+            // remarks[strcspn(remarks, "\n")] = '\0';
             fclose(file);
             return remarks; // Return the dynamically allocated status
         }
@@ -239,7 +246,6 @@ void *handleClient(void *arg)
 {
     while (1)
     {
-        int requestID;
         // Lock the queue and get the next client socket to process
         pthread_mutex_lock(&queueLock);
         while (isEmpty(&requestQueue))
@@ -247,7 +253,7 @@ void *handleClient(void *arg)
             // Wait for a signal indicating that the queue is not empty
             pthread_cond_wait(&queueCond, &queueLock);
         }
-        requestID = dequeue(&requestQueue);
+        int requestID = dequeue(&requestQueue);
         pthread_mutex_unlock(&queueLock);
 
         printf("Request ID=%d is assigned a Thread\n", requestID);
@@ -275,7 +281,7 @@ int generateUniqueRequestID()
     // Generate a random 3-digit number
     int randomPart = rand() % 1000;
 
-    // Combine the time and random parts to form a 6-digit request ID
+    // Combine the time and random parts to form a 9-digit request ID
     int requestID = timePart * 1000 + randomPart;
 
     return requestID;
@@ -297,10 +303,6 @@ int createNewRequest(int clientSockFD)
     if (n < 0)
         errorExit("ERROR :: FILE SEND ERROR");
 
-    n = send(clientSockFD, &requestID, sizeof(requestID), MSG_NOSIGNAL);
-    if (n < 0)
-        errorExit("ERROR :: FILE SEND ERROR");
-
     // Lock the queue and add the client socket for grading
     pthread_mutex_lock(&queueLock);
     if (isFull(&requestQueue))
@@ -308,11 +310,21 @@ int createNewRequest(int clientSockFD)
         pthread_mutex_unlock(&queueLock);
         errorExit("ERROR :: Request Queue Full");
     }
-    enqueue(&requestQueue, requestID);
 
+    printf("Client with FD = %d is given Request ID = %d\n", clientSockFD, requestID);
+
+    enqueue(&requestQueue, requestID);
     // Signal to wake up a waiting thread
     pthread_cond_signal(&queueCond);
     pthread_mutex_unlock(&queueLock);
+    
+    char requestIDString[30];
+    // Convert integer to string
+    sprintf(requestIDString, "Your RequestID is : %d\n", requestID);
+
+    n = send(clientSockFD, requestIDString, sizeof(requestIDString), MSG_NOSIGNAL);
+    if (n < 0)
+        errorExit("ERROR :: FILE SEND ERROR");
 
     pthread_mutex_lock(&fileLock);
     n = writeStatusToFile(requestID, "0");
@@ -321,9 +333,6 @@ int createNewRequest(int clientSockFD)
     {
         errorExit("ERROR :: File Write Error");
     }
-
-    printf("Client with FD = %d is given Request ID = %d\n", clientSockFD, requestID);
-
     return 0;
 }
 
@@ -345,30 +354,26 @@ int checkStatusRequest(int clientSockFD)
     }
     else
     {
-        n = send(clientSockFD, status, sizeof(status), MSG_NOSIGNAL);
-        if (n < 0)
-        {
-            errorExit("ERROR: SEND ERROR");
-        }
         char *remarks = readRemarksFromFile(status);
-        n = send(clientSockFD, remarks, sizeof(remarks), MSG_NOSIGNAL);
+        printf("Return Remarks :: %s\n", remarks);
+        n = send(clientSockFD, remarks, strlen(remarks), MSG_NOSIGNAL);
         if (n < 0)
         {
             errorExit("ERROR: SEND ERROR");
         }
-        if (strcmp(status, "2"))
+        if (strcmp(status, "2")==0)
         {
             char *compileOutputFileName = make_compile_output_filename(requestID);
             n = send_file(clientSockFD, compileOutputFileName);
             free(compileOutputFileName);
         }
-        else if (strcmp(status, "3"))
+        else if (strcmp(status, "3")==0)
         {
             char *runtimeOutputFileName = make_runtime_output_filename(requestID);
             n = send_file(clientSockFD, runtimeOutputFileName);
             free(runtimeOutputFileName);
         }
-        else if (strcmp(status, "4"))
+        else if (strcmp(status, "4")==0)
         {
             char *outputDiffFileName = make_output_diff_filename(requestID);
             n = send_file(clientSockFD, outputDiffFileName);
@@ -432,8 +437,8 @@ int main(int argc, char *argv[])
     int clientAddrLen = sizeof(clientAddr);
 
     // Thread to count queue size
-    pthread_t queueCountThread;
-    pthread_create(&queueCountThread, NULL, countQueueSize, NULL);
+    // pthread_t queueCountThread;
+    // pthread_create(&queueCountThread, NULL, countQueueSize, NULL);
 
     int threadPoolSize = atoi(argv[2]);
     pthread_t threads[threadPoolSize];
