@@ -69,8 +69,8 @@ int main(int argc, char* argv[]) {
         }
 
         // sending new flag to the server
-        if (send(client_socket, argv[1], sizeof(argv[1]), 0) != 0) {
-            perror("Error sending new flag : ");
+        if (send(client_socket, argv[1], sizeof(argv[1]), 0) < 0) {
+            perror("Error sending new flag : \n");
             close(client_socket);
         }
 
@@ -91,6 +91,66 @@ int main(int argc, char* argv[]) {
         {
             //read server response
             rcv_bytes = recv(client_socket, buffer, BUFFER_SIZE, 0);
+            printf("rcv_bytes: %d\n",rcv_bytes);
+            if (rcv_bytes <= 0) {
+                // printf("in if rcv_bytes: %d\n",rcv_bytes);
+                break;
+            }
+            // 
+            printf("Server Response: ");
+            printf("%s\n", buffer);
+            memset(buffer,0,BUFFER_SIZE);
+        }
+        close(client_socket);
+    }
+    else if (strcmp(argv[1], "status") == 0) {
+
+        // taking the status of client
+        int requestID = atoi(argv[3]);
+        client_socket = socket(AF_INET, SOCK_STREAM, 0);
+        if (client_socket < 0) {
+            perror("Error creating socket");
+            close(client_socket);
+        }
+
+        // Connect to the server
+        int tries = 0;
+        while(true) {
+            if (connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == 0) {
+                break;
+            }
+            else {
+                sleep(1);
+                tries += 1;
+                if (tries == MAX_TRIES) {
+                    perror("Server not responding\n");
+                    close(client_socket);
+                    break;
+                }
+            }
+        }
+
+        char* status = argv[1];
+        if(send(client_socket, status, sizeof(status), 0) < 0) {
+            perror("Error sending status flag : \n");
+            close(client_socket);
+        }
+
+        // sending new flag to the server
+        if (send(client_socket, &requestID, sizeof(requestID), 0) < 0) {
+            perror("Error sending requestID : \n");
+            close(client_socket);
+        }
+
+        //buffer for reading server response
+        int rcv_bytes;
+        char buffer[BUFFER_SIZE];
+        memset(buffer,0,BUFFER_SIZE);
+        while (true)
+        {
+            //read server response
+            rcv_bytes = recv(client_socket, buffer, BUFFER_SIZE, 0);
+            // printf("rcv_bytes: %d\n",rcv_bytes);
             if (rcv_bytes <= 0) {
                 // printf("in if rcv_bytes: %d\n",rcv_bytes);
                 break;
@@ -99,7 +159,11 @@ int main(int argc, char* argv[]) {
             printf("Server Response: ");
             printf("%s\n", buffer);
             memset(buffer,0,BUFFER_SIZE);
+            // sleep(1);
         }
+    }
+    else {
+        printf("Wrong status");
     }
 
     // if (strcmp(argv[1], "status") == 0) {
