@@ -102,6 +102,7 @@ int main(int argc, char* argv[]) {
 
     // Starting loop.
     time_t loop_start = time(0);
+    printf("\nStarting of the loop: %ld\n", loop_start);
     while(loop > 0) {
 
         // Create socket
@@ -112,16 +113,18 @@ int main(int argc, char* argv[]) {
             loop = loop - 1;
             continue;
         }
-
+        
         // Connect to the server
         int tries = 0;
         int server_error = 0;
         while(true) {
             if (connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == 0) {
+                printf("\nConnection successfull.\n");
                 break;
             }
             else {
                 sleep(1);
+                printf("\nCan't connect trying again.\n");
                 tries += 1;
                 if (tries == MAX_TRIES) {
                     printf("Server not responding\n");
@@ -135,10 +138,10 @@ int main(int argc, char* argv[]) {
 
         // If error happens while connecting then continue to loop
         if(server_error == 1) {
+            printf("\nServer is not responding\n");
             continue;
         }
-
-        time_t now = time(0);
+        
         // Opening the source code file
         if (send_file(client_socket, source_code_file) != 0) {
             printf("Error sending source file\n");
@@ -151,6 +154,7 @@ int main(int argc, char* argv[]) {
             successful_request += 1;
         }
 
+        time_t now = time(0);
         int rcv_bytes;
         //buffer for reading server response
         char buffer[BUFFER_SIZE];
@@ -174,7 +178,8 @@ int main(int argc, char* argv[]) {
         time_t then = time(0);
 
         if (rcv_bytes < 0) {
-            perror("Time out : No response from server : ");
+            printf("connection reset by peer\n");
+            perror("No response from server : ");
         }
         else {
             printf("response successful\n");
@@ -192,6 +197,7 @@ int main(int argc, char* argv[]) {
         sleep(sleep_time);
     }
     time_t loop_end = time(0);
+    printf("\nEnding of the loop: %ld\n", loop_end);
 
     // printing all necessary outputs
     printf("The number of Successful response: %d\n", successful_response);
