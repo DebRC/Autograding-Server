@@ -11,6 +11,8 @@ num_of_client=$3
 num_of_loop=$4
 sleep_time=$5
 
+gcc -o client gradingclient.c
+
 for ((num=1; num<=$num_of_client; num++)); do
     bash loadtest.sh $ip_port $test_file $num $num_of_loop $sleep_time
 done
