@@ -56,8 +56,14 @@ for ((num=1; num<=$numOfClient; num++)); do
     # echo "client overall response time: $overall_response_time"
 done
 # echo "number of client: $numOfClient"
-total_response=${total_response}.000000
-avgResponseTime=$(echo "scale=6; $overall_response_time / $total_response" | bc -l)
+
+
+if [ $total_response -eq 0 ]; then
+    $avgResponseTime=0.000000
+else
+    total_response=${total_response}.000000
+    avgResponseTime=$(echo "scale=6; $overall_response_time / $total_response" | bc -l)
+fi
 echo "Average response time: $avgResponseTime"
 
 
@@ -77,7 +83,11 @@ for ((num=1; num<=$numOfClient; num++)); do
         loop_time=$(grep "Total time for completing the loop" "$file_name" | awk '{print $7}')
         # echo "Found loop time: $loop_time"
     fi
-    ind_throughput=$(echo "scale=6; $num_of_response / $loop_time" | bc -l)
+    if [ $loop_time -eq 0 ]; then
+        $ind_throughput=0.000000
+    else
+        ind_throughput=$(echo "scale=6; $num_of_response / $loop_time" | bc -l)
+    fi
     overall_throughput=$(echo "scale=6; $overall_throughput + $ind_throughput" | bc -l)
 done
 
