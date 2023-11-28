@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "*.ejs": "html",
+        "stdbool.h": "c",
+        "file_transfer.h": "c",
+        "helper.h": "c",
+        "socket.h": "c",
+        "stdlib.h": "c",
+        "system_commands.h": "c",
+        "file_update.h": "c"
+    }
+}

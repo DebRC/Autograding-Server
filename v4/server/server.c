@@ -216,15 +216,9 @@ int createNewRequest(int clientSockFD)
     return 0;
 }
 
-int checkStatusRequest(int clientSockFD)
+int checkStatusRequest(int clientSockFD, int requestID)
 {
     int n;
-    int requestID;
-    n = recv(clientSockFD, &requestID, sizeof(requestID), 0);
-    if (n < 0)
-    {
-        errorExit("ERROR: RECV ERROR");
-    }
     pthread_mutex_lock(&fileLock);
     char *status = readStatusFromFile(requestID);
     pthread_mutex_unlock(&fileLock);
@@ -255,6 +249,7 @@ int checkStatusRequest(int clientSockFD)
         else if (strcmp(status, "4") == 0)
         {
             char *outputDiffFileName = make_output_diff_filename(requestID);
+            printf("File Name--%s\n", outputDiffFileName);
             n = send_file(clientSockFD, outputDiffFileName);
             free(outputDiffFileName);
         }
@@ -275,12 +270,18 @@ int getRequest(int clientSockFD)
     bzero(buffer, BUFFER_SIZE);
     // new or status_check
     int n = recv(clientSockFD, buffer, BUFFER_SIZE, 0);
+
+    char* status = strtok(buffer, ":");
+    int requestID;
+    if(strcmp(status, "status") == 0)
+        requestID = atoi(strtok(NULL, ":"));
+
     if (n < 0)
         return -1;
-    if (strcmp(buffer, "new") == 0)
+    if (strcmp(status, "new") == 0)
         return createNewRequest(clientSockFD);
-    else if (strcmp(buffer, "status") == 0)
-        return checkStatusRequest(clientSockFD);
+    else if (strcmp(status, "status") == 0)
+        return checkStatusRequest(clientSockFD, requestID);
     return -1;
 }
 

@@ -9,10 +9,7 @@
 #include <sys/time.h>
 #include <stdbool.h>
 #include "utils/helper.h"
-#include "utils/circular_queue.h"
 #include "utils/file_transfer.h"
-#include "utils/make_filename.h"
-#include "utils/system_commands.h"
 
 const int MAX_TRIES = 5;
 const int time_out_time = 5;
@@ -94,7 +91,7 @@ int main(int argc, char* argv[]) {
         {
             //read server response
             rcv_bytes = recv(client_socket, buffer, BUFFER_SIZE, 0);
-            printf("rcv_bytes: %d\n",rcv_bytes);
+            // printf("rcv_bytes: %d\n",rcv_bytes);
             if (rcv_bytes <= 0) {
                 // printf("in if rcv_bytes: %d\n",rcv_bytes);
                 break;
@@ -134,14 +131,15 @@ int main(int argc, char* argv[]) {
         }
 
         char* status = argv[1];
-        if(send(client_socket, status, sizeof(status), 0) < 0) {
-            perror("Error sending status flag : \n");
-            close(client_socket);
-        }
 
-        // sending new flag to the server
-        if (send(client_socket, &requestID, sizeof(requestID), 0) < 0) {
-            perror("Error sending requestID : \n");
+        char statusBuffer[20];
+
+        memset(statusBuffer,0,20);
+
+        sprintf(statusBuffer, "%s:%d", status, requestID);
+
+        if(send(client_socket, statusBuffer, sizeof(statusBuffer), 0) < 0) {
+            perror("Error sending status flag : \n");
             close(client_socket);
         }
 
@@ -168,79 +166,5 @@ int main(int argc, char* argv[]) {
     else {
         printf("Wrong status");
     }
-
-    // if (strcmp(argv[1], "status") == 0) {
-
-    // }
-
-    //     // Create socket
-        
-
-        
-
-    //     // If error happens while connecting then continue to loop
-    //     if(server_error == 1) {
-    //         sleep(1);
-    //         continue;
-    //     }
-
-    //     time_t now = time(0);
-
-        
-
-    //     // setting the timer
-    //     if (setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0) {
-    //         perror("setsockopt failed : ");
-    //         close(client_socket);
-    //         loop = loop - 1;
-    //         error_no += 1;
-    //         sleep(1);
-    //         continue;
-    //     }
-
-        
-
-    //     // printf("rcv_bytes: %d\n",rcv_bytes);
-
-    //     time_t then = time(0);
-
-    //     if (rcv_bytes < 0) {
-    //         if (errno == EWOULDBLOCK || errno == EAGAIN) {
-    //             num_of_timeout += 1;
-    //             perror("Time out : No response from server : ");
-    //         }
-    //         else {
-    //             error_no += 1;
-    //             perror("No response from server : ");
-    //         }    
-    //     }
-    //     else {
-    //         printf("response successfully recieved\n");
-    //         successful_response += 1;
-    //     }
-    //     time_t diff = then - now;
-    //     printf("Response Time: %lld\n\n", (long long) diff);
-
-    //     // total time taken
-    //     total_time += (long long) diff;;
-    //     loop = loop - 1;
-
-    //     //closing the client socket
-    //     close(client_socket);
-    //     sleep(sleep_time);
-    // }
-    // time_t loop_end = time(0);
-
-    // // printing all necessary outputs
-    // printf("The number of Successful response: %d\n", successful_response);
-    // if (successful_response == 0) 
-    //     printf("Average response time: %f Seconds\n", (float)total_time);
-    // else
-    //     printf("Average response time: %f Seconds\n", total_time / (float)successful_response);
-    // printf("Total response time: %lld Seconds\n", total_time);
-    // printf("Total time for completing the loop: %lld Seconds\n", (long long) (loop_end - loop_start));
-    // printf("The number of Successful request: %d\n", successful_request);
-    // printf("The number of errors occurred: %d\n", error_no);
-    // printf("The number of timeouts are: %d\n", num_of_timeout);
     return 0;
 }
