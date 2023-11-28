@@ -29,7 +29,7 @@ void *countQueueSize(void *arg)
     }
     while (1)
     {
-        int size = countItems(&requestQueue);
+        int size = getSize(&requestQueue);
         fprintf(outputFile, "%d\n", size);
         fflush(outputFile); // Flush the file buffer to ensure data is written immediately
         sleep(1);           // Sleep for 10 seconds
@@ -175,7 +175,7 @@ int main(int argc, char *argv[])
 
     // Initialize Request Queue
     int requestQueueSize = atoi(argv[3]);
-    initQueue(&requestQueue, requestQueueSize);
+    initQueue(&requestQueue);
 
     // Binding the server socket
     if (bind(serverSockFD, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
@@ -214,12 +214,7 @@ int main(int argc, char *argv[])
 
         // Lock the queue and add the client socket for grading
         pthread_mutex_lock(&queueLock);
-        if (isFull(&requestQueue))
-        {
-            pthread_mutex_unlock(&queueLock);
-            closeSocket(clientSockFD);
-            errorContinue("ERROR :: Request Queue Full");
-        }
+        
         enqueue(&requestQueue, clientSockFD);
 
         // Signal to wake up a waiting thread
