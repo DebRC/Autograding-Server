@@ -27,6 +27,30 @@ fi
 if [[ $core -eq 4 ]]; then
     taskset -c 0,1,2,3 ./server $port $threadPoolSize $requestQueueSize
 fi
+if [[ $core -eq 5 ]]; then
+    taskset -c 0,1,2,3,4 ./server $port $threadPoolSize $requestQueueSize
+fi
+if [[ $core -eq 6 ]]; then
+    taskset -c 0,1,2,3,4,5 ./server $port $threadPoolSize $requestQueueSize
+fi
+if [[ $core -eq 7 ]]; then
+    taskset -c 0,1,2,3,4,5,6 ./server $port $threadPoolSize $requestQueueSize
+fi
+if [[ $core -eq 8 ]]; then
+    taskset -c 0,1,2,3,4,5,6,7 ./server $port $threadPoolSize $requestQueueSize
+fi
+if [[ $core -eq 9 ]]; then
+    taskset -c 0,1,2,3,4,5,6,7,8 ./server $port $threadPoolSize $requestQueueSize
+fi
+if [[ $core -eq 10 ]]; then
+    taskset -c 0,1,2,3,4,5,6,7,8,9 ./server $port $threadPoolSize $requestQueueSize
+fi
+if [[ $core -eq 11 ]]; then
+    taskset -c 0,1,2,3,4,5,6,7,8,9,10 ./server $port $threadPoolSize $requestQueueSize
+fi
+if [[ $core -eq 12 ]]; then
+    taskset -c 0,1,2,3,4,5,6,7,8,9,10,11 ./server $port $threadPoolSize $requestQueueSize
+fi
 
 killChildren() {
     pkill -P $$  # Send the termination signal to all child processes
