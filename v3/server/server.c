@@ -8,8 +8,11 @@
 #include <string.h>
 #include <stdbool.h>
 #include <pthread.h>
-#include "helper/helper.h"
-#include "helper/circular_queue.h"
+#include "utils/helper.h"
+#include "utils/circular_queue.h"
+#include "utils/file_transfer.h"
+#include "utils/make_filename.h"
+#include "utils/system_commands.h"
 
 // Request Queue
 CircularQueue requestQueue;
@@ -29,13 +32,12 @@ void *countQueueSize(void *arg)
     }
     while (1)
     {
-        int size = countItems(&requestQueue);
+        int size = getSize(&requestQueue);
         fprintf(outputFile, "%d\n", size);
         fflush(outputFile); // Flush the file buffer to ensure data is written immediately
         sleep(1);           // Sleep for 10 seconds
     }
 }
-
 
 int grader(int clientSockFD)
 {
@@ -136,8 +138,8 @@ void *handleClient(void *arg)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 4)
-        errorExit("Usage: <portNumber> <threadPoolSize> <requestQueueSize>");
+    if (argc != 3)
+        errorExit("Usage: <portNumber> <threadPoolSize>");
 
     // Server and Client socket necessary variables
     int serverSockFD, serverPortNo;
@@ -174,8 +176,7 @@ int main(int argc, char *argv[])
     pthread_cond_init(&queueCond, NULL);
 
     // Initialize Request Queue
-    int requestQueueSize = atoi(argv[3]);
-    initQueue(&requestQueue, requestQueueSize);
+    initQueue(&requestQueue);
 
     // Binding the server socket
     if (bind(serverSockFD, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
@@ -214,12 +215,7 @@ int main(int argc, char *argv[])
 
         // Lock the queue and add the client socket for grading
         pthread_mutex_lock(&queueLock);
-        if (isFull(&requestQueue))
-        {
-            pthread_mutex_unlock(&queueLock);
-            closeSocket(clientSockFD);
-            errorContinue("ERROR :: Request Queue Full");
-        }
+        
         enqueue(&requestQueue, clientSockFD);
 
         // Signal to wake up a waiting thread

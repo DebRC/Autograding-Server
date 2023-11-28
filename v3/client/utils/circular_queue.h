@@ -1,20 +1,21 @@
 #ifndef CIRCULAR_QUEUE_H
 #define CIRCULAR_QUEUE_H
 
+typedef struct Node {
+    int val;
+    struct Node* next;
+} Node;
+
 typedef struct {
-    int *array;
+    Node* front;
     int size;
-    int front;
-    int rear;
-    int count;
 } CircularQueue;
 
-void initQueue(CircularQueue *q, int size);
+void initQueue(CircularQueue *q);
 int isEmpty(CircularQueue *q);
-int isFull(CircularQueue *q);
 int enqueue(CircularQueue *q, int item);
 int dequeue(CircularQueue *q);
+int getSize(CircularQueue *q);
 void freeQueue(CircularQueue *q);
-int countItems(CircularQueue *q);
 
 #endif
