@@ -13,7 +13,7 @@ mkdir -p logs
 mkdir -p logs/files
 mkdir -p logs/outputs
 
-gcc -o server server.c helper/circular_queue.c helper/helper.c
+gcc -o server server.c utils/helper.c utils/circular_queue.c utils/make_filename.c utils/system_commands.c utils/file_transfer.c
 
 if [[ $core -eq 1 ]]; then
     taskset -c 0 ./server $port $threadPoolSize $requestQueueSize
