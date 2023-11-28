@@ -13,6 +13,10 @@ num_of_loop=$4
 sleep_time=$5
 time_out=$6
 
+make clean
+
+make
+
 for ((num=1; num<=$num_of_client; num++)); do
     bash loadtest.sh $ip_port $test_file $num $num_of_loop $sleep_time $time_out
 done

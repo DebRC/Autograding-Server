@@ -8,8 +8,11 @@
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <stdbool.h>
-#include "helper/helper.h"
-
+#include "utils/helper.h"
+#include "utils/circular_queue.h"
+#include "utils/file_transfer.h"
+#include "utils/make_filename.h"
+#include "utils/system_commands.h"
 
 const int MAX_TRIES = 5;
 const int time_out_time = 5;
