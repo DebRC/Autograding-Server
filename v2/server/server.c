@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <pthread.h>
 
+// defining the constants used
 #define BUFFER_SIZE 1024
 #define MAX_FILE_SIZE_BYTES 4
 #define MAX_CLIENTS 10
@@ -43,15 +44,19 @@
         printf("Closed Client Socket with FD = %d\n", clientSockFD);                        \
     }
 
+
+// Function to recieve file from the client
 int recv_file(int sockfd, char *file_path)
 {
-    char buffer[BUFFER_SIZE];
-    bzero(buffer, BUFFER_SIZE);
-    FILE *file = fopen(file_path, "wb");
+    char buffer[BUFFER_SIZE];   // Initializing buffer to read
+    bzero(buffer, BUFFER_SIZE); // Initialize buffer to all NULLs
+    FILE *file = fopen(file_path, "wb");    // Opening the file from the file path given
     if (!file)
     {
         errorExit("ERROR :: FILE OPEN ERROR");
     }
+
+    // reveiving the file size from the client
     char file_size_bytes[MAX_FILE_SIZE_BYTES];
     if (recv(sockfd, file_size_bytes, sizeof(file_size_bytes), 0) == -1)
     {
@@ -60,10 +65,13 @@ int recv_file(int sockfd, char *file_path)
     }
 
     int file_size;
+
+    // copying the file size from the char array
     memcpy(&file_size, file_size_bytes, sizeof(file_size_bytes));
 
     printf("File size is: %d\n", file_size);
 
+     // recieving the actual file from the client and writes to the opened file
     size_t bytes_read = 0, total_bytes_read = 0;
     while (true)
     {
@@ -75,6 +83,7 @@ int recv_file(int sockfd, char *file_path)
             fclose(file);
             errorExit("ERROR :: FILE RECV ERROR");
         }
+        // write the source code to the file
         fwrite(buffer, 1, bytes_read, file);
         bzero(buffer, BUFFER_SIZE);
         if (total_bytes_read >= file_size)
@@ -84,6 +93,7 @@ int recv_file(int sockfd, char *file_path)
     return 0;
 }
 
+// Function to send to client
 int send_file(int sockfd, char *file_path)
 {
     char buffer[BUFFER_SIZE];
@@ -93,6 +103,8 @@ int send_file(int sockfd, char *file_path)
     {
         errorExit("ERROR :: FILE OPEN ERROR");
     }
+
+    // Send necessary infromation to the client
     while (!feof(file))
     {
         size_t bytes_read = fread(buffer, 1, BUFFER_SIZE - 1, file);
@@ -107,6 +119,7 @@ int send_file(int sockfd, char *file_path)
     return 0;
 }
 
+// Function to create the compile command
 char *compile_command(int id, char *programFile, char *execFile)
 {
 
@@ -127,6 +140,7 @@ char *compile_command(int id, char *programFile, char *execFile)
     return s;
 }
 
+// Function to create the run command
 char *run_command(int id, char *execFile)
 {
     char *s;
@@ -147,6 +161,7 @@ char *run_command(int id, char *execFile)
     return s;
 }
 
+// Function to create output check command
 char *output_check_command(int id, char *outputFile){
     char *s;
     char s1[20];
@@ -165,6 +180,7 @@ char *output_check_command(int id, char *outputFile){
     return s;
 }
 
+// Function to create program filename
 char *make_program_filename(int id)
 {
 
@@ -181,6 +197,7 @@ char *make_program_filename(int id)
     return s;
 }
 
+// Function to create the execute filename
 char *make_exec_filename(int id)
 {
     char *s;
@@ -195,6 +212,7 @@ char *make_exec_filename(int id)
     return s;
 }
 
+// Function to create the compile error file
 char *make_compile_output_filename(int id)
 {
     char *s;
@@ -208,6 +226,7 @@ char *make_compile_output_filename(int id)
     return s;
 }
 
+// Function to make the runtime error file
 char *make_runtime_output_filename(int id)
 {
     char *s;
@@ -221,6 +240,7 @@ char *make_runtime_output_filename(int id)
     return s;
 }
 
+// Function to create the output file 
 char *make_output_filename(int id)
 {
     char *s;
@@ -234,6 +254,7 @@ char *make_output_filename(int id)
     return s;
 }
 
+// Function to create the output diff fil
 char *make_output_diff_filename(int id){
     char *s;
     char s1[20];
@@ -254,19 +275,20 @@ void *grader(void *arg)
     int threadID = pthread_self();
 
     int n;
-    char *programFileName = make_program_filename(threadID);
-    if (recv_file(clientSockFD, programFileName) != 0)
+    char *programFileName = make_program_filename(threadID);        // creating the program file name with unique id
+    if (recv_file(clientSockFD, programFileName) != 0)              // recieve the source code from the client
     {
         free(programFileName);
         errorExitThread("ERROR :: FILE RECV ERROR",clientSockFD);
     }
-    n = send(clientSockFD, "I got your code file for grading\n", 33, 0);
+    n = send(clientSockFD, "I got your code file for grading\n", 33, 0);    // send the confirmation to the client
     if (n < 0)
     {
         free(programFileName);
         errorExitThread("ERROR :: FILE SEND ERROR",clientSockFD);
     }
 
+    // make all necessary files and commands
     char *execFileName = make_exec_filename(threadID);
     char *compileOutputFileName = make_compile_output_filename(threadID);
     char *runtimeOutputFileName = make_runtime_output_filename(threadID);
@@ -277,33 +299,38 @@ void *grader(void *arg)
     char *runCommand = run_command(threadID, execFileName);
     char *outputCheckCommand = output_check_command(threadID, outputFileName);
 
+    // Checking if source file successfully compiled or not
     if (system(compileCommand) != 0)
     {
-        n = send(clientSockFD, "COMPILER ERROR", 15, 0);
+        n = send(clientSockFD, "COMPILER ERROR", 15, 0);    // send feedback to the client
         sleep(1);
         if (n >= 0){
-            n=send_file(clientSockFD, compileOutputFileName);
+            n=send_file(clientSockFD, compileOutputFileName);   // send the error to the client
         }
             
     }
-    else if (system(runCommand) != 0)
+
+    // Checking if the source file is successfully execute or not
+    else if (system(runCommand) != 0)     
     {
-        n = send(clientSockFD, "RUNTIME ERROR", 14, 0);
+        n = send(clientSockFD, "RUNTIME ERROR", 14, 0); // send feedback to the client
         if (n >= 0)
-            n=send_file(clientSockFD, runtimeOutputFileName);
+            n=send_file(clientSockFD, runtimeOutputFileName);   // send the error to the client
     }
     else
     {
+        // checking for output error 
         if(system(outputCheckCommand)!=0){
             n = send(clientSockFD, "OUTPUT ERROR", 14, 0);
             if (n >= 0)
-                n=send_file(clientSockFD, outputDiffFileName);
+                n=send_file(clientSockFD, outputDiffFileName);  // sending the output error to the client
         }
         else{
             n = send(clientSockFD, "PROGRAM RAN", 12, 0);
         }
     }
 
+    // free all the used variables
     free(programFileName);
     free(execFileName);
     free(compileOutputFileName);
@@ -319,11 +346,14 @@ void *grader(void *arg)
 
     printf("SUCCESS :: Client File Graded for Client Socket with FD = %d\n", clientSockFD);
     closeSocket(clientSockFD);
+
+    // exiting the current thread
     pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[])
 {
+     // checking if the right inputs are given or not
     if (argc != 2)
     {
         errorExit("ERROR :: No Port Provided");
@@ -342,6 +372,7 @@ int main(int argc, char *argv[])
     if (setsockopt(serverSockFD, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
         error("ERROR :: setsockopt (SO_REUSEADDR) Failed");
 
+    // Initializing the serverAddr structure
     bzero((char *)&serverAddr, sizeof(serverAddr));
     serverPortNo = atoi(argv[1]);
     serverAddr.sin_family = AF_INET;
@@ -366,6 +397,7 @@ int main(int argc, char *argv[])
 
     while (1)
     {
+        // Creating the client socket
         int *clientSockFD = (int *)malloc(sizeof(int));
         *clientSockFD = accept(serverSockFD, (struct sockaddr *)&clientAddr, &clientAddrLen);
         if (*clientSockFD < 0){
@@ -385,6 +417,8 @@ int main(int argc, char *argv[])
             free(clientSockFD);
             errorContinue("ERROR :: Client File Could Not be Graded");
         }
+
+        // Detach the current thread or kill
         pthread_detach(thread);
         
         // reqID++;

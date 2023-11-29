@@ -1,10 +1,13 @@
 #!/bin/bash
 
+# taking the port from the input
 port=$1
 
+# storing the utilization snapshots
 snapshotFile="logs/utilization_snapshot.csv"
 > $snapshotFile
 
+# initialize the variables
 total_nlwp=0
 total_cpu=0
 count=0

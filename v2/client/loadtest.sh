@@ -14,11 +14,14 @@ numOfLoop=$4
 sleepTime=$5
 timeOut=$6
 
+# making the necessary directories
 mkdir -p client_logs
 mkdir -p client_logs/$numOfClient
 
+# running the utilization script in the background
 bash utilizationScript.sh 8080 &
 
+# Initialize all the varibales needed
 totalResponseTime=0.00
 overall_throughput=0.00
 overall_response_time=0.00
@@ -58,18 +61,18 @@ for ((num=1; num<=$numOfClient; num++)); do
     fi
     if grep -q "The number of Successful response" "$file_name"; then
         num_of_response=$(grep "The number of Successful response" "$file_name" | awk '{print $6}')
-        # echo "Found no of response: $num_of_response"
     fi
+
+    # calculating the overall response time
     total_response=$(echo "scale=2; $total_response + $num_of_response" | bc -l)
-    # echo "total successful response: $total_response"
     client_total_response_time=$(echo "scale=6; $client_avg_response_time * $num_of_response" | bc -l)
-    # echo "client total response time: $client_total_response_time"
     overall_response_time=$(echo "scale=2; $overall_response_time + $client_total_response_time" | bc -l)
-    # echo "client overall response time: $overall_response_time"
 done
-# echo "number of client: $numOfClient"
+
 avgResponseTime=0
 echo "total successful response: $total_response"
+
+# checking to resolve the divide by zero exception
 if [ $total_response -eq 0 ]; then
     avgResponseTime=${avgResponseTime}.00
 else
@@ -92,16 +95,17 @@ for ((num=1; num<=$numOfClient; num++)); do
     # Use grep and awk to search and extract the float value
     if grep -q "The number of Successful response" "$file_name"; then
         num_of_response=$(grep "The number of Successful response" "$file_name" | awk '{print $6}')
-        # echo "Found no of response: $num_of_response"
     fi
 
     if grep -q "Total time for completing the loop" "$file_name"; then
         loop_time=$(grep "Total time for completing the loop" "$file_name" | awk '{print $7}')
-        # echo "Found loop time: $loop_time"
     fi
+
+    # checking to resolve the divide by zero exception
     if [ $loop_time -eq 0 ]; then
         ind_throughput=$num_of_request
     else 
+        #calculating the overall througput using the individual throughput
         ind_throughput=$(echo "scale=2; $num_of_response / $loop_time" | bc -l)
     fi
     overall_throughput=$(echo "scale=2; $overall_throughput + $ind_throughput" | bc -l)
@@ -130,9 +134,12 @@ for ((num=1; num<=$numOfClient; num++)); do
     else
         loop_time=0
     fi
+
+    # checking to resolve the divide by zero exception
     if [ $loop_time -eq 0 ]; then
         ind_request_rate=$num_of_request
     else 
+        # calculating the overall request rate using the individual request rate
         ind_request_rate=$(echo "scale=2; $num_of_request / $loop_time" | bc -l)
     fi
     overall_request_rate=$(echo "scale=2; $overall_request_rate + $ind_request_rate" | bc -l)
@@ -163,14 +170,15 @@ for ((num=1; num<=$numOfClient; num++)); do
     else
         loop_time=0
     fi
+
+    # checking to resolve the divide by zero exception
     if [ $loop_time -eq 0 ]; then
         ind_error_rate=$num_of_error
     else 
         ind_error_rate=$(echo "scale=2; $num_of_error / $loop_time" | bc -l)
-        # echo "Number of response: $num_of_response"
-        # echo "loop time: $loop_time"
-        # echo "Individual Throughput: $ind_throughput"
     fi
+
+    # Calculating the overall error rate
     total_error=$(echo "scale=2; $total_error + $num_of_error" | bc -l)
     overall_error_rate=$(echo "scale=2; $overall_error_rate + $ind_error_rate" | bc -l)
 done
@@ -201,14 +209,15 @@ for ((num=1; num<=$numOfClient; num++)); do
     else
         loop_time=0
     fi
+
+    # checking to resolve the divide by zero exception
     if [ $loop_time -eq 0 ]; then
         ind_timeout_rate=$num_of_timeout
     else 
         ind_timeout_rate=$(echo "scale=2; $num_of_timeout / $loop_time" | bc -l)
-        # echo "Number of response: $num_of_response"
-        # echo "loop time: $loop_time"
-        # echo "Individual Throughput: $ind_throughput"
     fi
+
+    # Calculating the overall timeout rate for the client
     total_time_out=$(echo "scale=2; $total_time_out + $num_of_timeout" | bc -l)
     overall_timeout_rate=$(echo "scale=2; $overall_timeout_rate + $ind_timeout_rate" | bc -l)
 done

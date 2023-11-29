@@ -11,10 +11,12 @@
 #include <sys/time.h>
 #include <stdbool.h>
 
+// Initializing the constants 
 const int BUFFER_SIZE = 1024; 
 const int MAX_FILE_SIZE_BYTES = 4;
 const int MAX_TRIES = 5;
 
+// function to send files to client using sockfd
 int send_file(int sockfd, char* file_path) {
     char buffer[BUFFER_SIZE]; //buffer to read  from  file
     bzero(buffer, BUFFER_SIZE); //initialize buffer to all NULLs
@@ -25,7 +27,7 @@ int send_file(int sockfd, char* file_path) {
         return -1;
     }
 		
-		//for finding file size in bytes
+	//for finding file size in bytes
     fseek(file, 0L, SEEK_END); 
     int file_size = ftell(file);
     // printf("File size is: %d\n", file_size);
@@ -33,8 +35,9 @@ int send_file(int sockfd, char* file_path) {
     //Reset file descriptor to beginning of file
     fseek(file, 0L, SEEK_SET);
 		
-		//buffer to send file size to server
+	//buffer to send file size to server
     char file_size_bytes[MAX_FILE_SIZE_BYTES];
+
     //copy the bytes of the file size integer into the char buffer
     memcpy(file_size_bytes, &file_size, sizeof(file_size));
     
@@ -72,17 +75,21 @@ int send_file(int sockfd, char* file_path) {
 
 
 int main(int argc, char* argv[]) {
+
+     // Checking if correct inputs are given or not
     if (argc != 6) {
         printf("Usage: ./client <serverIP:port> <sourceCodeFileTobeGraded>  <loopNum> <sleepTimeSeconds> <time-out> \n");
         return 1;
     }
 
+    // extracting the inputs from the terminal
     char* server_ip_port = argv[1];
     char* source_code_file = argv[2];
     int loop = atoi(argv[3]);
     int sleep_time = atoi(argv[4]);
     int time_out_time = atoi(argv[5]);
 
+    // Initializing necessary variables
     int client_socket;
     struct sockaddr_in server_addr;
     long long total_time = 0;
@@ -173,6 +180,7 @@ int main(int argc, char* argv[]) {
         }
 
         int rcv_bytes;
+
         //buffer for reading server response
         char buffer[BUFFER_SIZE];
         memset(buffer,0,BUFFER_SIZE);
@@ -190,10 +198,10 @@ int main(int argc, char* argv[]) {
             memset(buffer,0,BUFFER_SIZE);
         }
 
-        // printf("rcv_bytes: %d\n",rcv_bytes);
-
+        // Taking time after recieving response from the server
         time_t then = time(0);
 
+        // checking for the timeout in the connection
         if (rcv_bytes < 0) {
             if (errno == EWOULDBLOCK || errno == EAGAIN) {
                 num_of_timeout += 1;
@@ -208,6 +216,8 @@ int main(int argc, char* argv[]) {
             printf("response successfully recieved\n");
             successful_response += 1;
         }
+
+        // calculating the reponse time
         time_t diff = then - now;
         printf("Response Time: %lld\n\n", (long long) diff);
 
