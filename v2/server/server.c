@@ -44,6 +44,7 @@
         printf("Closed Client Socket with FD = %d\n", clientSockFD);                        \
     }
 
+
 // Function to recieve file from the client
 int recv_file(int sockfd, char *file_path)
 {
@@ -72,8 +73,6 @@ int recv_file(int sockfd, char *file_path)
 
      // recieving the actual file from the client and writes to the opened file
     size_t bytes_read = 0, total_bytes_read = 0;
-
-    // recieving the actual file from the client and writes to the opened file
     while (true)
     {
         bytes_read = recv(sockfd, buffer, BUFFER_SIZE, 0);
@@ -97,7 +96,7 @@ int recv_file(int sockfd, char *file_path)
 // Function to send to client
 int send_file(int sockfd, char *file_path)
 {
-    char buffer[BUFFER_SIZE];   // Initializing the buffer
+    char buffer[BUFFER_SIZE];
     bzero(buffer, BUFFER_SIZE);
     FILE *file = fopen(file_path, "rb");
     if (!file)
@@ -421,9 +420,20 @@ int main(int argc, char *argv[])
 
         // Detach the current thread or kill
         pthread_detach(thread);
+        
+        // reqID++;
+        // if (grader(clientSockFD) == 0)
+        // {
+        //     printf("File Grade Successful for Client :: %s\n", inet_ntoa(clientAddr.sin_addr));
+        // }
+        // else
+        // {
+        //     printf("File Grade Unsuccessful for Client :: %s\n", inet_ntoa(clientAddr.sin_addr));
+        // }
+        // close(clientSockFD);
+        // printf("Closed Client Connection From :: %s with FD :: %d\n", inet_ntoa(clientAddr.sin_addr), clientSockFD);
     }
 
-    // finally close the client socket
     close(serverSockFD);
 
     return 0;
