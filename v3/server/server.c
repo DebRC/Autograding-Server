@@ -71,8 +71,8 @@ int grader(int clientSockFD)
     // check if compile command runs successfully
     if (system(compileCommand) != 0)
     {
-        n = send(clientSockFD, "COMPILER ERROR", 15, MSG_NOSIGNAL); // send back response to the client
-        sleep(1);
+        n = send(clientSockFD, "COMPILER ERROR", BUFFER_SIZE, MSG_NOSIGNAL); // send back response to the client
+        // sleep(1);
         if (n >= 0)
         {
             n = send_file(clientSockFD, compileOutputFileName); // send the compiler error to the client
@@ -82,7 +82,7 @@ int grader(int clientSockFD)
     // chceck if execute command is running properly
     else if (system(runCommand) != 0)
     {
-        n = send(clientSockFD, "RUNTIME ERROR", 14, MSG_NOSIGNAL);  // send back the response to the client
+        n = send(clientSockFD, "RUNTIME ERROR", BUFFER_SIZE, MSG_NOSIGNAL);  // send back the response to the client
         if (n >= 0)
             n = send_file(clientSockFD, runtimeOutputFileName); // send the runtime error to the client
     }
@@ -91,13 +91,13 @@ int grader(int clientSockFD)
         //check the output matches with the expected output or not
         if (system(outputCheckCommand) != 0)
         {
-            n = send(clientSockFD, "OUTPUT ERROR", 14, MSG_NOSIGNAL);   // send respond to the client MSG_NOSIGNAL flag fixes the broken pipe error
+            n = send(clientSockFD, "OUTPUT ERROR", BUFFER_SIZE, MSG_NOSIGNAL);   // send respond to the client MSG_NOSIGNAL flag fixes the broken pipe error
             if (n >= 0)
                 n = send_file(clientSockFD, outputDiffFileName);    // send the difference to the client
         }
         else
         {
-            n = send(clientSockFD, "PROGRAM RAN", 12, MSG_NOSIGNAL);    // send the client about successful executioon
+            n = send(clientSockFD, "PROGRAM RAN", BUFFER_SIZE, MSG_NOSIGNAL);    // send the client about successful executioon
         }
     }
 
