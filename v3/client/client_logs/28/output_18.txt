@@ -1,0 +1,20 @@
+Code sent for grading, waiting for response
+Response Time: 4
+
+Code sent for grading, waiting for response
+Response Time: 5
+
+Code sent for grading, waiting for response
+Server Response: I got your code file for grading
+
+Server Response: PROGRAM RAN
+response successfully recieved
+Response Time: 6
+
+The number of Successful response: 1
+Average response time: 15.000000 Seconds
+Total response time: 15 Seconds
+Total time for completing the loop: 18 Seconds
+The number of Successful request: 3
+The number of errors occurred: 0
+The number of timeouts are: 2
