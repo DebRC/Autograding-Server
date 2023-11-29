@@ -2,6 +2,7 @@ import csv
 import sys
 import matplotlib.pyplot as plt
 
+# initialize the list for the plotting
 num_of_clients = []
 response_time = []
 throughput_time = []
@@ -12,6 +13,7 @@ request_rate_sent = []
 average_thread = []
 average_cpu = []
 
+# read data into lists from the csv file
 with open(sys.argv[1],'r') as csv_file:
     content = csv.reader(csv_file)
     for line in content:

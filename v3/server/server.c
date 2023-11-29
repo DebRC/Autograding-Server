@@ -44,19 +44,20 @@ int grader(int clientSockFD)
     int threadID = pthread_self();
 
     int n;
-    char *programFileName = make_program_filename(threadID);
-    if (recv_file(clientSockFD, programFileName) != 0)
+    char *programFileName = make_program_filename(threadID);    // creating the file name with unique id
+    if (recv_file(clientSockFD, programFileName) != 0)  // recieving the file from the client
     {
         free(programFileName);
         errorExit("ERROR :: FILE RECV ERROR");
     }
-    n = send(clientSockFD, "I got your code file for grading\n", 33, MSG_NOSIGNAL);
+    n = send(clientSockFD, "I got your code file for grading\n", 33, MSG_NOSIGNAL); //send the response back to the client
     if (n < 0)
     {
         free(programFileName);
         errorExit("ERROR :: FILE SEND ERROR");
     }
 
+    // creating all the necessary commands and file names
     char *execFileName = make_exec_filename(threadID);
     char *compileOutputFileName = make_compile_output_filename(threadID);
     char *runtimeOutputFileName = make_runtime_output_filename(threadID);
@@ -67,35 +68,40 @@ int grader(int clientSockFD)
     char *runCommand = run_command(threadID, execFileName);
     char *outputCheckCommand = output_check_command(threadID, outputFileName);
 
+    // check if compile command runs successfully
     if (system(compileCommand) != 0)
     {
-        n = send(clientSockFD, "COMPILER ERROR", 15, MSG_NOSIGNAL);
+        n = send(clientSockFD, "COMPILER ERROR", 15, MSG_NOSIGNAL); // send back response to the client
         sleep(1);
         if (n >= 0)
         {
-            n = send_file(clientSockFD, compileOutputFileName);
-        }
-    }
-    else if (system(runCommand) != 0)
-    {
-        n = send(clientSockFD, "RUNTIME ERROR", 14, MSG_NOSIGNAL);
-        if (n >= 0)
-            n = send_file(clientSockFD, runtimeOutputFileName);
-    }
-    else
-    {
-        if (system(outputCheckCommand) != 0)
-        {
-            n = send(clientSockFD, "OUTPUT ERROR", 14, MSG_NOSIGNAL);
-            if (n >= 0)
-                n = send_file(clientSockFD, outputDiffFileName);
-        }
-        else
-        {
-            n = send(clientSockFD, "PROGRAM RAN", 12, MSG_NOSIGNAL);
+            n = send_file(clientSockFD, compileOutputFileName); // send the compiler error to the client
         }
     }
 
+    // chceck if execute command is running properly
+    else if (system(runCommand) != 0)
+    {
+        n = send(clientSockFD, "RUNTIME ERROR", 14, MSG_NOSIGNAL);  // send back the response to the client
+        if (n >= 0)
+            n = send_file(clientSockFD, runtimeOutputFileName); // send the runtime error to the client
+    }
+    else
+    {
+        //check the output matches with the expected output or not
+        if (system(outputCheckCommand) != 0)
+        {
+            n = send(clientSockFD, "OUTPUT ERROR", 14, MSG_NOSIGNAL);   // send respond to the client MSG_NOSIGNAL flag fixes the broken pipe error
+            if (n >= 0)
+                n = send_file(clientSockFD, outputDiffFileName);    // send the difference to the client
+        }
+        else
+        {
+            n = send(clientSockFD, "PROGRAM RAN", 12, MSG_NOSIGNAL);    // send the client about successful executioon
+        }
+    }
+
+    // free all the variables used
     free(programFileName);
     free(execFileName);
     free(compileOutputFileName);
@@ -138,6 +144,7 @@ void *handleClient(void *arg)
 
 int main(int argc, char *argv[])
 {
+    // check if arguments are correct or not
     if (argc != 3)
         errorExit("Usage: <portNumber> <threadPoolSize>");
 
@@ -152,9 +159,11 @@ int main(int argc, char *argv[])
     if (serverSockFD < 0)
         errorExit("ERROR :: Socket Opening Failed");
 
+    // implementing the timer error
     if (setsockopt(serverSockFD, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
         error("ERROR :: setsockopt (SO_REUSEADDR) Failed");
 
+    // initializing the serverAddr structure
     bzero((char *)&serverAddr, sizeof(serverAddr));
     serverPortNo = atoi(argv[1]);
     serverAddr.sin_family = AF_INET;

@@ -16,20 +16,25 @@
 #include "utils/make_filename.h"
 #include "utils/system_commands.h"
 
+// initializing the constats
 const int MAX_TRIES = 5;
 
 int main(int argc, char* argv[]) {
+
+    // Checking if the inputs are correct
     if (argc != 6) {
         printf("Usage: ./client <serverIP:port> <sourceCodeFileTobeGraded>  <loopNum> <sleepTimeSeconds> <time-out> \n");
         return 1;
     }
 
+    // Taking the input arguments
     char* server_ip_port = argv[1];
     char* source_code_file = argv[2];
     int loop = atoi(argv[3]);
     int sleep_time = atoi(argv[4]);
     int time_out_time = atoi(argv[5]);
 
+    // Initializing the variables used
     int client_socket;
     struct sockaddr_in server_addr;
     long long total_time = 0;
@@ -145,6 +150,7 @@ int main(int argc, char* argv[]) {
 
         time_t then = time(0);
 
+        // Checking for the time-out errors
         if (rcv_bytes < 0) {
             if (errno == EWOULDBLOCK || errno == EAGAIN) {
                 num_of_timeout += 1;
