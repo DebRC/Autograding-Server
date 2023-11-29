@@ -81,7 +81,7 @@ int recv_file(int sockfd, char *file_path)
     return 0;
 }
 
-// Function to send the 
+// Function to send to client
 int send_file(int sockfd, char *file_path)
 {
     char buffer[BUFFER_SIZE];   // Initializing the buffer
