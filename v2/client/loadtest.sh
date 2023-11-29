@@ -145,7 +145,7 @@ for ((num=1; num<=$numOfClient; num++)); do
     overall_request_rate=$(echo "scale=2; $overall_request_rate + $ind_request_rate" | bc -l)
 done
 
-echo "Overall Request Rate(Goodput): $overall_request_rate"
+echo "Sucessful Request Rate(Goodput): $overall_request_rate"
 
 
 
@@ -184,7 +184,7 @@ for ((num=1; num<=$numOfClient; num++)); do
 done
 
 echo "Total errors: $total_error"
-echo "Overall Error Rate: $overall_error_rate"
+echo "Error Rate: $overall_error_rate"
 
 
 
@@ -223,7 +223,7 @@ for ((num=1; num<=$numOfClient; num++)); do
 done
 
 echo "Total timeouts: $total_time_out"
-echo "Overall Timeout Rate: $overall_timeout_rate"
+echo "Timeout Rate: $overall_timeout_rate"
 
 
 
@@ -231,7 +231,7 @@ echo "Overall Timeout Rate: $overall_timeout_rate"
 
 # CALCULATING THE REQUEST RATE SENT
 request_rate_sent=$(echo "scale=2; $overall_timeout_rate + $overall_error_rate + $overall_throughput" | bc -l)
-echo "Overall Request Rate Sent: $request_rate_sent"
+echo "Request Rate Sent: $request_rate_sent"
 
 
 

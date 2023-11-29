@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "/home/pranab/IITB Academics/Sem 1/CS744/autograding-server/v1/client",
-      "program": "/home/pranab/IITB Academics/Sem 1/CS744/autograding-server/v1/client/build/Debug/outDebug",
+      "cwd": "/home/pranab/IITB Academics/Sem 1/CS744/autograding-server/v2/client",
+      "program": "/home/pranab/IITB Academics/Sem 1/CS744/autograding-server/v2/client/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
