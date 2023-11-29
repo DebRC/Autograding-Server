@@ -2,10 +2,12 @@ import csv
 import sys
 import matplotlib.pyplot as plt
 
+# Lists used to plot the graphs
 num_of_clients = []
 response_time = []
 throughput_time = []
 
+# opening the given input csv file and taking the values for the plot
 with open(sys.argv[1],'r') as csv_file:
     content = csv.reader(csv_file)
     for line in content:

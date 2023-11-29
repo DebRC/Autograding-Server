@@ -13,9 +13,11 @@ numOfClient=$3
 numOfLoop=$4
 sleepTime=$5
 
+# creating the needy directories
 mkdir -p client_logs
 mkdir -p client_logs/$numOfClient
 
+# Initialize the variables
 totalResponseTime=0.000000
 overall_throughput=0.000000
 overall_response_time=0.000000
@@ -46,18 +48,22 @@ for ((num=1; num<=$numOfClient; num++)); do
     fi
     if grep -q "The number of Successful response" "$file_name"; then
         num_of_response=$(grep "The number of Successful response" "$file_name" | awk '{print $6}')
-        # echo "Found no of response: $num_of_response"
     fi
+
+    # calculating the overall response time
     total_response=$(echo "scale=6; $total_response + $num_of_response" | bc -l)
-    # echo "total successful response: $total_response"
     client_total_response_time=$(echo "scale=6; $client_avg_response_time * $num_of_response" | bc -l)
-    # echo "client total response time: $client_total_response_time"
     overall_response_time=$(echo "scale=6; $overall_response_time + $client_total_response_time" | bc -l)
-    # echo "client overall response time: $overall_response_time"
 done
-# echo "number of client: $numOfClient"
-total_response=${total_response}.000000
-avgResponseTime=$(echo "scale=6; $overall_response_time / $total_response" | bc -l)
+
+# If total response time somehow comes zero make average response time also to zero
+# calculating the average response time
+if [ $total_response -eq 0 ]; then
+    $avgResponseTime=0.000000
+else
+    total_response=${total_response}.000000
+    avgResponseTime=$(echo "scale=6; $overall_response_time / $total_response" | bc -l)
+fi
 echo "Average response time: $avgResponseTime"
 
 
@@ -70,15 +76,19 @@ for ((num=1; num<=$numOfClient; num++)); do
     # Use grep and awk to search and extract the float value
     if grep -q "The number of Successful response" "$file_name"; then
         num_of_response=$(grep "The number of Successful response" "$file_name" | awk '{print $6}')
-        # echo "Found no of response: $num_of_response"
     fi
 
     if grep -q "Total time for completing the loop" "$file_name"; then
         loop_time=$(grep "Total time for completing the loop" "$file_name" | awk '{print $7}')
-        # echo "Found loop time: $loop_time"
     fi
-    ind_throughput=$(echo "scale=6; $num_of_response / $loop_time" | bc -l)
-    overall_throughput=$(echo "scale=6; $overall_throughput + $ind_throughput" | bc -l)
+
+    # To avoid divide by zero exception
+    if [ $loop_time -eq 0 ]; then
+        $ind_throughput=0.000000
+    else
+        ind_throughput=$(echo "scale=6; $num_of_response / $loop_time" | bc -l) # calculating the individual throughput
+    fi
+    overall_throughput=$(echo "scale=6; $overall_throughput + $ind_throughput" | bc -l) # calculating the overall throughput
 done
 
 echo "Overall throughput: $overall_throughput"
