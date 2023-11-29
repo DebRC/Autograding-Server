@@ -17,9 +17,17 @@
 
 // Request Queue
 CircularQueue requestQueue;
+CircularQueue clientQueue;
+
+// Lock for file storage where grade will be stores
 pthread_mutex_t fileLock;
-pthread_mutex_t queueLock;
-pthread_cond_t queueCond;
+
+// Conditional Lock and Mutex for the Queue
+pthread_mutex_t requestQueueLock;
+pthread_cond_t requestQueueCond;
+pthread_mutex_t clientQueueLock;
+pthread_cond_t clientQueueCond;
+
 
 // Function to count and write queue size to a file
 void *countQueueSize(void *arg)
@@ -40,6 +48,8 @@ void *countQueueSize(void *arg)
     }
 }
 
+// Function to For fault tolerance
+// Restores Request which has not been graded
 int faultTolerance()
 {
     printf("RUNNING FAULT TOLERANCE ::\n");
@@ -61,19 +71,22 @@ int faultTolerance()
         if ((strcmp(status, "0") == 0) || (strcmp(status, "1") == 0))
         {
             // Lock the queue and add the client socket for grading
-            pthread_mutex_lock(&queueLock);
+            pthread_mutex_lock(&requestQueueLock);
             enqueue(&requestQueue, requestID);
             printf("Request ID = %d, is Re-Added to Queue.\n", requestID);
 
             // Signal to wake up a waiting thread
-            pthread_cond_signal(&queueCond);
-            pthread_mutex_unlock(&queueLock);
+            pthread_cond_signal(&requestQueueCond);
+            pthread_mutex_unlock(&requestQueueLock);
         }
     }
     printf("FAULT TOLERANCE DONE\n");
     return 0;
 }
 
+// Grader function.
+// Dequeues the given requestID
+// and grade them, store result in storage
 int grader(int requestID)
 {
     char *programFileName = make_program_filename(requestID);
@@ -128,19 +141,21 @@ int grader(int requestID)
     return 0;
 }
 
-void *handleClient(void *arg)
+// Thread which handles the requests
+// from the queue
+void *handleRequests(void *arg)
 {
     while (1)
     {
         // Lock the queue and get the next client socket to process
-        pthread_mutex_lock(&queueLock);
+        pthread_mutex_lock(&requestQueueLock);
         while (isEmpty(&requestQueue))
         {
             // Wait for a signal indicating that the queue is not empty
-            pthread_cond_wait(&queueCond, &queueLock);
+            pthread_cond_wait(&requestQueueCond, &requestQueueLock);
         }
         int requestID = dequeue(&requestQueue);
-        pthread_mutex_unlock(&queueLock);
+        pthread_mutex_unlock(&requestQueueLock);
 
         printf("Request ID=%d is assigned a Thread\n", requestID);
 
@@ -173,6 +188,7 @@ int generateUniqueRequestID()
     return requestID;
 }
 
+// If client send 'new' request
 int createNewRequest(int clientSockFD)
 {
     int requestID = generateUniqueRequestID();
@@ -185,24 +201,24 @@ int createNewRequest(int clientSockFD)
     }
     free(programFileName);
 
-    n = send(clientSockFD, "I got your code file for grading\n", 33, MSG_NOSIGNAL);
+    n = send(clientSockFD, "I got your code file for grading\n", BUFFER_SIZE, MSG_NOSIGNAL);
     if (n < 0)
         errorExit("ERROR :: FILE SEND ERROR");
 
     // Lock the queue and add the client socket for grading
-    pthread_mutex_lock(&queueLock);
+    pthread_mutex_lock(&requestQueueLock);
     enqueue(&requestQueue, requestID);
     printf("Client with FD = %d is given Request ID = %d\n", clientSockFD, requestID);
 
     // Signal to wake up a waiting thread
-    pthread_cond_signal(&queueCond);
-    pthread_mutex_unlock(&queueLock);
+    pthread_cond_signal(&requestQueueCond);
+    pthread_mutex_unlock(&requestQueueLock);
 
     char requestIDString[30];
     // Convert integer to string
     sprintf(requestIDString, "Your RequestID is : %d\n", requestID);
 
-    n = send(clientSockFD, requestIDString, strlen(requestIDString), MSG_NOSIGNAL);
+    n = send(clientSockFD, requestIDString, BUFFER_SIZE, MSG_NOSIGNAL);
     if (n < 0)
         errorExit("ERROR :: FILE SEND ERROR");
 
@@ -216,6 +232,7 @@ int createNewRequest(int clientSockFD)
     return 0;
 }
 
+// If client send 'status' request
 int checkStatusRequest(int clientSockFD, int requestID)
 {
     int n;
@@ -264,25 +281,40 @@ int checkStatusRequest(int clientSockFD, int requestID)
     return 0;
 }
 
-int getRequest(int clientSockFD)
+// Function which handles first request from client
+void *handleClients(void *arg)
 {
-    char buffer[BUFFER_SIZE];
-    bzero(buffer, BUFFER_SIZE);
-    // new or status_check
-    int n = recv(clientSockFD, buffer, BUFFER_SIZE, 0);
+    while(1){
+        int clientSockFD;
+        // Lock the queue and get the next client socket to process
+        pthread_mutex_lock(&clientQueueLock);
+        while (isEmpty(&clientQueue))
+        {
+            // Wait for a signal indicating that the queue is not empty
+            pthread_cond_wait(&clientQueueCond, &clientQueueLock);
+        }
+        clientSockFD = dequeue(&clientQueue);
+        pthread_mutex_unlock(&clientQueueLock);
+        char buffer[BUFFER_SIZE];
+        bzero(buffer, BUFFER_SIZE);
+        int n = recv(clientSockFD, buffer, BUFFER_SIZE, 0);
+        if (n < 0){
+            close(clientSockFD);
+            continue;
+        }
+        char* status = strtok(buffer, ":");
+        int requestID;
+        if(strcmp(status, "status") == 0)
+            requestID = atoi(strtok(NULL, ":"));
+        if (strcmp(status, "new") == 0){
+            createNewRequest(clientSockFD);
+        }
+        else if (strcmp(status, "status") == 0){
+            checkStatusRequest(clientSockFD, requestID);
+        }
+        close(clientSockFD);
+    }
 
-    char* status = strtok(buffer, ":");
-    int requestID;
-    if(strcmp(status, "status") == 0)
-        requestID = atoi(strtok(NULL, ":"));
-
-    if (n < 0)
-        return -1;
-    if (strcmp(status, "new") == 0)
-        return createNewRequest(clientSockFD);
-    else if (strcmp(status, "status") == 0)
-        return checkStatusRequest(clientSockFD, requestID);
-    return -1;
 }
 
 int main(int argc, char *argv[])
@@ -304,6 +336,7 @@ int main(int argc, char *argv[])
     if (serverSockFD < 0)
         errorExit("ERROR :: Socket Opening Failed");
 
+    // To disable socket binding error
     if (setsockopt(serverSockFD, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
         errorExit("ERROR :: setsockopt (SO_REUSEADDR) Failed");
 
@@ -317,20 +350,27 @@ int main(int argc, char *argv[])
     int clientAddrLen = sizeof(clientAddr);
 
     // Thread to count queue size
-    // pthread_t queueCountThread;
-    // pthread_create(&queueCountThread, NULL, countQueueSize, NULL);
+    pthread_t queueCountThread;
+    pthread_create(&queueCountThread, NULL, countQueueSize, NULL);
 
+    // Grading thread pool
+    // These threads independently grades the request
     int threadPoolSize = atoi(argv[2]);
-    pthread_t threads[threadPoolSize];
+    pthread_t requestThreads[threadPoolSize];
+    pthread_t clientThreads[threadPoolSize];
 
     // Initialize the mutex and cond
     pthread_mutex_init(&fileLock, NULL);
-    pthread_mutex_init(&queueLock, NULL);
-    pthread_cond_init(&queueCond, NULL);
+    pthread_mutex_init(&requestQueueLock, NULL);
+    pthread_cond_init(&requestQueueCond, NULL);
+    pthread_mutex_init(&clientQueueLock, NULL);
+    pthread_cond_init(&clientQueueCond, NULL);
 
     // Initialize Request Queue
     initQueue(&requestQueue);
+    initQueue(&clientQueue);
 
+    // Start Fault tolerance
     if(faultTolerance()<0){
         errorExit("ERROR :: While running fault tolerance");
     }
@@ -348,20 +388,25 @@ int main(int argc, char *argv[])
         errorExit("ERROR :: Socket Listening Failed");
     }
 
-
-
     // Create thread pool
     for (int i = 0; i < threadPoolSize; i++)
     {
-        if (pthread_create(&threads[i], NULL, handleClient, NULL) != 0)
+        if (pthread_create(&requestThreads[i], NULL, handleRequests, NULL) != 0)
+        {
+            close(serverSockFD);
+            errorExit("ERROR :: Thread creation failed");
+        }
+        if (pthread_create(&clientThreads[i], NULL, handleClients, NULL) != 0)
         {
             close(serverSockFD);
             errorExit("ERROR :: Thread creation failed");
         }
     }
 
+    // Loop which accepts connections indefinitely
     while (1)
     {
+        // Accept client
         clientSockFD = accept(serverSockFD, (struct sockaddr *)&clientAddr, &clientAddrLen);
 
         // If accept fails
@@ -372,9 +417,14 @@ int main(int argc, char *argv[])
 
         printf("Accepted Client Connection From %s with FD = %d\n", inet_ntoa(clientAddr.sin_addr), clientSockFD);
 
-        getRequest(clientSockFD);
+        // Lock the queue and add the client socket for grading
+        pthread_mutex_lock(&clientQueueLock);
+        
+        enqueue(&clientQueue, clientSockFD);
 
-        closeSocket(clientSockFD);
+        // Signal to wake up a waiting thread
+        pthread_cond_signal(&clientQueueCond);
+        pthread_mutex_unlock(&clientQueueLock);
     }
     close(serverSockFD);
 

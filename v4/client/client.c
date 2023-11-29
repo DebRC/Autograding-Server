@@ -69,10 +69,13 @@ int main(int argc, char* argv[]) {
         }
 
         // sending new flag to the server
-        if (send(client_socket, argv[1], sizeof(argv[1]), 0) < 0) {
+        if (send(client_socket, argv[1], BUFFER_SIZE, 0) < 0) {
             perror("Error sending new flag : \n");
             close(client_socket);
         }
+
+        
+        // sleep(5);
 
         // Opening the source code file
         if (send_file(client_socket, source_code_file) != 0) {
@@ -83,7 +86,6 @@ int main(int argc, char* argv[]) {
             printf("Code sent for grading, waiting for response\n");
         }
         int rcv_bytes;
-
         //buffer for reading server response
         char buffer[BUFFER_SIZE];
         memset(buffer,0,BUFFER_SIZE);
@@ -132,21 +134,20 @@ int main(int argc, char* argv[]) {
 
         char* status = argv[1];
 
-        char statusBuffer[20];
+        char buffer[BUFFER_SIZE];
+        memset(buffer,0,BUFFER_SIZE);
 
-        memset(statusBuffer,0,20);
+        sprintf(buffer, "%s:%d", status, requestID);
 
-        sprintf(statusBuffer, "%s:%d", status, requestID);
-
-        if(send(client_socket, statusBuffer, sizeof(statusBuffer), 0) < 0) {
+        if(send(client_socket, buffer, BUFFER_SIZE, 0) < 0) {
             perror("Error sending status flag : \n");
             close(client_socket);
         }
 
         //buffer for reading server response
         int rcv_bytes;
-        char buffer[BUFFER_SIZE];
         memset(buffer,0,BUFFER_SIZE);
+
         while (true)
         {
             //read server response
