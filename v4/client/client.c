@@ -157,11 +157,9 @@ int main(int argc, char* argv[]) {
                 // printf("in if rcv_bytes: %d\n",rcv_bytes);
                 break;
             }
-            // printf("rcv_bytes: %d\n",rcv_bytes);
             printf("Server Response: ");
             printf("%s\n", buffer);
             memset(buffer,0,BUFFER_SIZE);
-            // sleep(1);
         }
     }
     else {

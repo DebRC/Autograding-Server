@@ -89,6 +89,7 @@ int faultTolerance()
 // and grade them, store result in storage
 int grader(int requestID)
 {
+    // Create the file names and commands for compilation process
     char *programFileName = make_program_filename(requestID);
     char *execFileName = make_exec_filename(requestID);
     char *compileOutputFileName = make_compile_output_filename(requestID);
@@ -100,6 +101,7 @@ int grader(int requestID)
     char *runCommand = run_command(requestID, execFileName);
     char *outputCheckCommand = output_check_command(requestID, outputFileName);
 
+    // Execute the commands
     if (system(compileCommand) != 0)
     {
         pthread_mutex_lock(&fileLock);
@@ -128,6 +130,7 @@ int grader(int requestID)
         }
     }
 
+    // Free heap vars
     free(programFileName);
     free(execFileName);
     free(compileOutputFileName);
@@ -141,34 +144,7 @@ int grader(int requestID)
     return 0;
 }
 
-// Thread which handles the requests
-// from the queue
-void *handleRequests(void *arg)
-{
-    while (1)
-    {
-        // Lock the queue and get the next client socket to process
-        pthread_mutex_lock(&requestQueueLock);
-        while (isEmpty(&requestQueue))
-        {
-            // Wait for a signal indicating that the queue is not empty
-            pthread_cond_wait(&requestQueueCond, &requestQueueLock);
-        }
-        int requestID = dequeue(&requestQueue);
-        pthread_mutex_unlock(&requestQueueLock);
 
-        printf("Request ID=%d is assigned a Thread\n", requestID);
-
-        pthread_mutex_lock(&fileLock);
-        updateStatusToFile(requestID, "1");
-        pthread_mutex_unlock(&fileLock);
-
-        if (grader(requestID) == 0)
-            printf("SUCCESS :: File Graded for Request ID = %d\n", requestID);
-        else
-            printf("ERROR :: File Cannot Be Graded for Request ID = %d\n", requestID);
-    }
-}
 
 // Function to generate a unique 6-digit request ID based on current time
 int generateUniqueRequestID()
@@ -191,8 +167,11 @@ int generateUniqueRequestID()
 // If client send 'new' request
 int createNewRequest(int clientSockFD)
 {
+    // Generates a unique request id
     int requestID = generateUniqueRequestID();
     int n;
+
+    // Make the filename using request id
     char *programFileName = make_program_filename(requestID);
     if (recv_file(clientSockFD, programFileName) != 0)
     {
@@ -201,11 +180,12 @@ int createNewRequest(int clientSockFD)
     }
     free(programFileName);
 
+    // Respond a confirmation message to client
     n = send(clientSockFD, "I got your code file for grading\n", BUFFER_SIZE, MSG_NOSIGNAL);
     if (n < 0)
         errorExit("ERROR :: FILE SEND ERROR");
 
-    // Lock the queue and add the client socket for grading
+    // Lock the queue and add the request id for grading
     pthread_mutex_lock(&requestQueueLock);
     enqueue(&requestQueue, requestID);
     printf("Client with FD = %d is given Request ID = %d\n", clientSockFD, requestID);
@@ -218,10 +198,12 @@ int createNewRequest(int clientSockFD)
     // Convert integer to string
     sprintf(requestIDString, "Your RequestID is : %d\n", requestID);
 
+    // Respond Request ID back to client
     n = send(clientSockFD, requestIDString, BUFFER_SIZE, MSG_NOSIGNAL);
     if (n < 0)
         errorExit("ERROR :: FILE SEND ERROR");
 
+    // Write the status to the file
     pthread_mutex_lock(&fileLock);
     n = writeStatusToFile(requestID, "0");
     pthread_mutex_unlock(&fileLock);
@@ -236,33 +218,46 @@ int createNewRequest(int clientSockFD)
 int checkStatusRequest(int clientSockFD, int requestID)
 {
     int n;
+
+    // Lock the file system
     pthread_mutex_lock(&fileLock);
+    // Reads the status from file
     char *status = readStatusFromFile(requestID);
     pthread_mutex_unlock(&fileLock);
+
+    // If status is not valid
     if (status == NULL)
     {
         n = send(clientSockFD, "INVALID REQUEST ID", 20, MSG_NOSIGNAL);
     }
     else
     {
+        // Read remarks for that following status
         char *remarks = readRemarksFromFile(status);
+
+        // Send the remarks
         n = send(clientSockFD, remarks, strlen(remarks), MSG_NOSIGNAL);
         if (n < 0)
         {
             errorExit("ERROR: SEND ERROR");
         }
+
+        // Check if status is 2, 2 means compiler error
+        // Status with their remarks are given in Remarks.txt
         if (strcmp(status, "2") == 0)
         {
             char *compileOutputFileName = make_compile_output_filename(requestID);
             n = send_file(clientSockFD, compileOutputFileName);
             free(compileOutputFileName);
         }
+        // Check if status is 3, 3 means runtime error
         else if (strcmp(status, "3") == 0)
         {
             char *runtimeOutputFileName = make_runtime_output_filename(requestID);
             n = send_file(clientSockFD, runtimeOutputFileName);
             free(runtimeOutputFileName);
         }
+        // 4 means there is a difference in output
         else if (strcmp(status, "4") == 0)
         {
             char *outputDiffFileName = make_output_diff_filename(requestID);
@@ -281,7 +276,7 @@ int checkStatusRequest(int clientSockFD, int requestID)
     return 0;
 }
 
-// Function which handles first request from client
+// Thread function which manages clients
 void *handleClients(void *arg)
 {
     while(1){
@@ -293,10 +288,14 @@ void *handleClients(void *arg)
             // Wait for a signal indicating that the queue is not empty
             pthread_cond_wait(&clientQueueCond, &clientQueueLock);
         }
+        // Deque the client socket from queue
         clientSockFD = dequeue(&clientQueue);
         pthread_mutex_unlock(&clientQueueLock);
+
         char buffer[BUFFER_SIZE];
         bzero(buffer, BUFFER_SIZE);
+
+        // Get the first message i.e. status <new|status>
         int n = recv(clientSockFD, buffer, BUFFER_SIZE, 0);
         if (n < 0){
             close(clientSockFD);
@@ -304,18 +303,59 @@ void *handleClients(void *arg)
         }
         char* status = strtok(buffer, ":");
         int requestID;
+
+        // If status, then also fetch the request ID
+        // from the same message
         if(strcmp(status, "status") == 0)
             requestID = atoi(strtok(NULL, ":"));
+
+        // Call functions accordingly
         if (strcmp(status, "new") == 0){
             createNewRequest(clientSockFD);
         }
         else if (strcmp(status, "status") == 0){
             checkStatusRequest(clientSockFD, requestID);
         }
-        close(clientSockFD);
+
+        // Close socket after done
+        closeSocket(clientSockFD);
     }
 
 }
+
+// Thread function which 
+// handles the requests
+// from the queue
+void *handleRequests(void *arg)
+{
+    while (1)
+    {
+        // Lock the queue and get the next client socket to process
+        pthread_mutex_lock(&requestQueueLock);
+        while (isEmpty(&requestQueue))
+        {
+            // Wait for a signal indicating that the queue is not empty
+            pthread_cond_wait(&requestQueueCond, &requestQueueLock);
+        }
+        // Get the request id
+        int requestID = dequeue(&requestQueue);
+        pthread_mutex_unlock(&requestQueueLock);
+
+        printf("Request ID=%d is assigned a Thread\n", requestID);
+
+        // Update the status of the request id in file storage
+        pthread_mutex_lock(&fileLock);
+        updateStatusToFile(requestID, "1");
+        pthread_mutex_unlock(&fileLock);
+
+        // Store grader response
+        if (grader(requestID) == 0)
+            printf("SUCCESS :: File Graded for Request ID = %d\n", requestID);
+        else
+            printf("ERROR :: File Cannot Be Graded for Request ID = %d\n", requestID);
+    }
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -391,11 +431,14 @@ int main(int argc, char *argv[])
     // Create thread pool
     for (int i = 0; i < threadPoolSize; i++)
     {
+        // Threads for request
         if (pthread_create(&requestThreads[i], NULL, handleRequests, NULL) != 0)
         {
             close(serverSockFD);
             errorExit("ERROR :: Thread creation failed");
         }
+
+        // Threads for clients
         if (pthread_create(&clientThreads[i], NULL, handleClients, NULL) != 0)
         {
             close(serverSockFD);
