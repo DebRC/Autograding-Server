@@ -8,3 +8,12 @@ v2/client/client_logs
 v2/.vscode
 v2/client/avg_response_time.pdf
 v2/client/throughput.pdf
+v1/client/client
+v1/client/output.csv
+v1/client/sample.cpp
+v1/server/logs/files/file4.cpp
+v1/server/logs/files/prog4
+v1/server/logs/outputs/out4
+v1/server/logs/outputs/output_diff4
+v1/server/server
+

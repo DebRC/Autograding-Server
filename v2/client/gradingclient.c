@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
     server_addr.sin_port = htons(server_port);
     // inet_pton(AF_INET.)
 
-    // Starting loop.
+    // Taking time before the loop starts
     time_t loop_start = time(0);
     while(loop > 0) {
 
@@ -128,16 +128,18 @@ int main(int argc, char* argv[]) {
             error_no += 1;
             continue;
         }
-
+        
         // Connect to the server
         int tries = 0;
         int server_error = 0;
         while(true) {
             if (connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == 0) {
+                printf("\nConnection successfull.\n");
                 break;
             }
             else {
                 sleep(1);
+                printf("\nCan't connect trying again.\n");
                 tries += 1;
                 if (tries == MAX_TRIES) {
                     printf("Server not responding\n");
@@ -152,6 +154,7 @@ int main(int argc, char* argv[]) {
 
         // If error happens while connecting then continue to loop
         if(server_error == 1) {
+            printf("\nServer is not responding\n");
             continue;
         }
 
@@ -230,6 +233,7 @@ int main(int argc, char* argv[]) {
         sleep(sleep_time);
     }
     time_t loop_end = time(0);
+    printf("\nEnding of the loop: %ld\n", loop_end);
 
     // printing all necessary outputs
     printf("The number of Successful response: %d\n", successful_response);

@@ -44,7 +44,10 @@
         printf("Closed Client Socket with FD = %d\n", clientSockFD);                        \
     }
 
+<<<<<<< HEAD:v2/server/server.c
 
+=======
+>>>>>>> master:v1/server/server.c
 // Function to recieve file from the client
 int recv_file(int sockfd, char *file_path)
 {
@@ -73,6 +76,8 @@ int recv_file(int sockfd, char *file_path)
 
      // recieving the actual file from the client and writes to the opened file
     size_t bytes_read = 0, total_bytes_read = 0;
+
+    // recieving the actual file from the client and writes to the opened file
     while (true)
     {
         bytes_read = recv(sockfd, buffer, BUFFER_SIZE, 0);
@@ -83,6 +88,10 @@ int recv_file(int sockfd, char *file_path)
             fclose(file);
             errorExit("ERROR :: FILE RECV ERROR");
         }
+<<<<<<< HEAD:v2/server/server.c
+=======
+
+>>>>>>> master:v1/server/server.c
         // write the source code to the file
         fwrite(buffer, 1, bytes_read, file);
         bzero(buffer, BUFFER_SIZE);
@@ -96,7 +105,7 @@ int recv_file(int sockfd, char *file_path)
 // Function to send to client
 int send_file(int sockfd, char *file_path)
 {
-    char buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE];   // Initializing the buffer
     bzero(buffer, BUFFER_SIZE);
     FILE *file = fopen(file_path, "rb");
     if (!file)
@@ -119,6 +128,10 @@ int send_file(int sockfd, char *file_path)
     return 0;
 }
 
+<<<<<<< HEAD:v2/server/server.c
+=======
+
+>>>>>>> master:v1/server/server.c
 // Function to create the compile command
 char *compile_command(int id, char *programFile, char *execFile)
 {
@@ -212,7 +225,11 @@ char *make_exec_filename(int id)
     return s;
 }
 
+<<<<<<< HEAD:v2/server/server.c
 // Function to create the compile error file
+=======
+// Function to create the compile error file 
+>>>>>>> master:v1/server/server.c
 char *make_compile_output_filename(int id)
 {
     char *s;
@@ -254,7 +271,11 @@ char *make_output_filename(int id)
     return s;
 }
 
+<<<<<<< HEAD:v2/server/server.c
 // Function to create the output diff fil
+=======
+// Function to create the output diff file
+>>>>>>> master:v1/server/server.c
 char *make_output_diff_filename(int id){
     char *s;
     char s1[20];
@@ -267,7 +288,12 @@ char *make_output_diff_filename(int id){
     return s;
 }
 
+<<<<<<< HEAD:v2/server/server.c
 void *grader(void *arg)
+=======
+// The main grader function
+int grader(int clientSockFD)
+>>>>>>> master:v1/server/server.c
 {
     int clientSockFD = *(int *)arg;
     free(arg);
@@ -275,8 +301,13 @@ void *grader(void *arg)
     int threadID = pthread_self();
 
     int n;
+<<<<<<< HEAD:v2/server/server.c
     char *programFileName = make_program_filename(threadID);        // creating the program file name with unique id
     if (recv_file(clientSockFD, programFileName) != 0)              // recieve the source code from the client
+=======
+    char *programFileName = make_program_filename(reqID);   // creating the program file name with unique id
+    if (recv_file(clientSockFD, programFileName) != 0)      // recieve the source code from the client
+>>>>>>> master:v1/server/server.c
     {
         free(programFileName);
         errorExitThread("ERROR :: FILE RECV ERROR",clientSockFD);
@@ -289,11 +320,19 @@ void *grader(void *arg)
     }
 
     // make all necessary files and commands
+<<<<<<< HEAD:v2/server/server.c
     char *execFileName = make_exec_filename(threadID);
     char *compileOutputFileName = make_compile_output_filename(threadID);
     char *runtimeOutputFileName = make_runtime_output_filename(threadID);
     char *outputFileName = make_output_filename(threadID);
     char *outputDiffFileName = make_output_diff_filename(threadID);
+=======
+    char *execFileName = make_exec_filename(reqID);
+    char *compileOutputFileName = make_compile_output_filename(reqID);
+    char *runtimeOutputFileName = make_runtime_output_filename(reqID);
+    char *outputFileName = make_output_filename(reqID);
+    char *outputDiffFileName = make_output_diff_filename(reqID);
+>>>>>>> master:v1/server/server.c
 
     char *compileCommand = compile_command(threadID, programFileName, execFileName);
     char *runCommand = run_command(threadID, execFileName);
@@ -311,16 +350,26 @@ void *grader(void *arg)
     }
 
     // Checking if the source file is successfully execute or not
+<<<<<<< HEAD:v2/server/server.c
     else if (system(runCommand) != 0)     
     {
         n = send(clientSockFD, "RUNTIME ERROR", 14, 0); // send feedback to the client
+=======
+    else if (system(runCommand) != 0)
+    {
+        n = send(clientSockFD, "RUNTIME ERROR", 14, 0);     // send feedback to the client
+>>>>>>> master:v1/server/server.c
         if (n >= 0)
             n=send_file(clientSockFD, runtimeOutputFileName);   // send the error to the client
     }
     else
     {
+<<<<<<< HEAD:v2/server/server.c
         // checking for output error 
         if(system(outputCheckCommand)!=0){
+=======
+        if(system(outputCheckCommand)!=0){                      // checking for output error 
+>>>>>>> master:v1/server/server.c
             n = send(clientSockFD, "OUTPUT ERROR", 14, 0);
             if (n >= 0)
                 n=send_file(clientSockFD, outputDiffFileName);  // sending the output error to the client
@@ -353,7 +402,11 @@ void *grader(void *arg)
 
 int main(int argc, char *argv[])
 {
+<<<<<<< HEAD:v2/server/server.c
      // checking if the right inputs are given or not
+=======
+    // checking if the right inputs are given or not
+>>>>>>> master:v1/server/server.c
     if (argc != 2)
     {
         errorExit("ERROR :: No Port Provided");
@@ -369,19 +422,26 @@ int main(int argc, char *argv[])
     if (serverSockFD < 0)
         errorExit("ERROR :: Socket Opening Failed");
 
+<<<<<<< HEAD:v2/server/server.c
     if (setsockopt(serverSockFD, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
         error("ERROR :: setsockopt (SO_REUSEADDR) Failed");
 
     // Initializing the serverAddr structure
+=======
+    // initializing the severAddr
+>>>>>>> master:v1/server/server.c
     bzero((char *)&serverAddr, sizeof(serverAddr));
     serverPortNo = atoi(argv[1]);
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = INADDR_ANY;
     serverAddr.sin_port = htons(serverPortNo);
 
+<<<<<<< HEAD:v2/server/server.c
     // Get address size
     int clientAddrLen = sizeof(clientAddr);
 
+=======
+>>>>>>> master:v1/server/server.c
     // Binding the server socket
     if (bind(serverSockFD, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
     {
@@ -397,6 +457,7 @@ int main(int argc, char *argv[])
 
     while (1)
     {
+<<<<<<< HEAD:v2/server/server.c
         // Creating the client socket
         int *clientSockFD = (int *)malloc(sizeof(int));
         *clientSockFD = accept(serverSockFD, (struct sockaddr *)&clientAddr, &clientAddrLen);
@@ -412,6 +473,20 @@ int main(int argc, char *argv[])
 
         // Create worker thread to handle client
         if (pthread_create(&thread, NULL, grader, clientSockFD) != 0)
+=======
+        int clientAddrLen = sizeof(clientAddr);
+
+        // accept the client connection
+        int clientSockFD = accept(serverSockFD, (struct sockaddr *)&clientAddr, &clientAddrLen);
+        if (clientSockFD < 0)
+            errorContinue("ERROR :: Client Socket Accept Failed");
+
+        printf("Accepted Client Connection From :: %s with FD :: %d\n", inet_ntoa(clientAddr.sin_addr), clientSockFD);
+        reqID++;
+
+        // calling the grader funciton with the sockfd of the client
+        if (grader(clientSockFD) == 0)
+>>>>>>> master:v1/server/server.c
         {
             close(*clientSockFD);
             free(clientSockFD);
@@ -434,6 +509,7 @@ int main(int argc, char *argv[])
         // printf("Closed Client Connection From :: %s with FD :: %d\n", inet_ntoa(clientAddr.sin_addr), clientSockFD);
     }
 
+    // finally close the client socket
     close(serverSockFD);
 
     return 0;
