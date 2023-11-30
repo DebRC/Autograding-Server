@@ -171,6 +171,7 @@ int main(int argc, char* argv[]) {
         }
 
         // setting the timer
+        // This is the specific option indicating the receive timeout. It sets the maximum time a blocking recv call will wait for data to arrive.
         if (setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0) {
             perror("setsockopt failed : ");
             close(client_socket);
