@@ -308,7 +308,7 @@ void *handleClients(void *arg)
             pthread_mutex_unlock(&clientQueueLock);
             errorContinue("Dequeue Error");
         }
-        printf("\n%s\n", clientSockFD);
+        // printf("\n%s\n", clientSockFD);
         pthread_mutex_unlock(&clientQueueLock);
 
         char buffer[BUFFER_SIZE];
