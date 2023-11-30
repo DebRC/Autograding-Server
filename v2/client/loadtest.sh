@@ -19,7 +19,7 @@ mkdir -p client_logs
 mkdir -p client_logs/$numOfClient
 
 # running the utilization script in the background
-bash utilizationScript.sh 8080 &
+bash utilization_script.sh 8080 &
 
 # Initialize all the varibales needed
 totalResponseTime=0.00
@@ -44,7 +44,7 @@ for ((i=1; i<=$numOfClient; i++)); do
     wait "${pids[$i]}"
 done
 
-PID=$(ps -eLf | grep utilizationScript.sh | head -1 | awk '{print $2}')
+PID=$(ps -eLf | grep utilization_script.sh | head -1 | awk '{print $2}')
 # echo "PID: $PID"
 kill -9 $PID  &> /dev/null 
 
