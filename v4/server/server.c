@@ -28,7 +28,6 @@ pthread_cond_t requestQueueCond;
 pthread_mutex_t clientQueueLock;
 pthread_cond_t clientQueueCond;
 
-
 // Function to count and write queue size to a file
 void *countQueueSize(void *arg)
 {
@@ -72,7 +71,13 @@ int faultTolerance()
         {
             // Lock the queue and add the client socket for grading
             pthread_mutex_lock(&requestQueueLock);
-            enqueue(&requestQueue, requestID);
+            // printf("DEBUG 3 :: ENQUEUEING REQUEST ID\n");
+
+            if (enqueue(&requestQueue, requestID) < 0)
+            {
+                pthread_mutex_unlock(&requestQueueLock);
+                errorExit("Enqueue Error");
+            };
             printf("Request ID = %d, is Re-Added to Queue.\n", requestID);
 
             // Signal to wake up a waiting thread
@@ -144,8 +149,6 @@ int grader(int requestID)
     return 0;
 }
 
-
-
 // Function to generate a unique 6-digit request ID based on current time
 int generateUniqueRequestID()
 {
@@ -187,7 +190,14 @@ int createNewRequest(int clientSockFD)
 
     // Lock the queue and add the request id for grading
     pthread_mutex_lock(&requestQueueLock);
-    enqueue(&requestQueue, requestID);
+    // printf("DEBUG 2 :: ENQUEUEING REQUEST ID\n");
+
+    if (enqueue(&requestQueue, requestID) < 0)
+    {
+        pthread_mutex_unlock(&requestQueueLock);
+        closeSocket(clientSockFD);
+        errorExit("Enqueue Error");
+    }
     printf("Client with FD = %d is given Request ID = %d\n", clientSockFD, requestID);
 
     // Signal to wake up a waiting thread
@@ -279,7 +289,8 @@ int checkStatusRequest(int clientSockFD, int requestID)
 // Thread function which manages clients
 void *handleClients(void *arg)
 {
-    while(1){
+    while (1)
+    {
         int clientSockFD;
         // Lock the queue and get the next client socket to process
         pthread_mutex_lock(&clientQueueLock);
@@ -288,8 +299,17 @@ void *handleClients(void *arg)
             // Wait for a signal indicating that the queue is not empty
             pthread_cond_wait(&clientQueueCond, &clientQueueLock);
         }
+
+        // printf("DEBUG 4 :: DEQUEUEING CLIENT SOCK FD\n");
+
         // Deque the client socket from queue
         clientSockFD = dequeue(&clientQueue);
+        if (clientSockFD < 0)
+        {
+            pthread_mutex_unlock(&clientQueueLock);
+            errorContinue("Dequeue Error");
+        }
+        printf("\n%s\n", clientSockFD);
         pthread_mutex_unlock(&clientQueueLock);
 
         char buffer[BUFFER_SIZE];
@@ -297,33 +317,35 @@ void *handleClients(void *arg)
 
         // Get the first message i.e. status <new|status>
         int n = recv(clientSockFD, buffer, BUFFER_SIZE, 0);
-        if (n < 0){
+        if (n < 0)
+        {
             close(clientSockFD);
             continue;
         }
-        char* status = strtok(buffer, ":");
+        char *status = strtok(buffer, ":");
         int requestID;
 
         // If status, then also fetch the request ID
         // from the same message
-        if(strcmp(status, "status") == 0)
+        if (strcmp(status, "status") == 0)
             requestID = atoi(strtok(NULL, ":"));
 
         // Call functions accordingly
-        if (strcmp(status, "new") == 0){
+        if (strcmp(status, "new") == 0)
+        {
             createNewRequest(clientSockFD);
         }
-        else if (strcmp(status, "status") == 0){
+        else if (strcmp(status, "status") == 0)
+        {
             checkStatusRequest(clientSockFD, requestID);
         }
 
         // Close socket after done
         closeSocket(clientSockFD);
     }
-
 }
 
-// Thread function which 
+// Thread function which
 // handles the requests
 // from the queue
 void *handleRequests(void *arg)
@@ -337,8 +359,16 @@ void *handleRequests(void *arg)
             // Wait for a signal indicating that the queue is not empty
             pthread_cond_wait(&requestQueueCond, &requestQueueLock);
         }
+
+        // printf("DEBUG 5 :: DEQUEUEING REQUEST ID\n");
+
         // Get the request id
         int requestID = dequeue(&requestQueue);
+        if (requestID < 0)
+        {
+            pthread_mutex_unlock(&requestQueueLock);
+            errorContinue("Dequeue Error");
+        }
         pthread_mutex_unlock(&requestQueueLock);
 
         printf("Request ID=%d is assigned a Thread\n", requestID);
@@ -355,7 +385,6 @@ void *handleRequests(void *arg)
             printf("ERROR :: File Cannot Be Graded for Request ID = %d\n", requestID);
     }
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -411,7 +440,8 @@ int main(int argc, char *argv[])
     initQueue(&clientQueue);
 
     // Start Fault tolerance
-    if(faultTolerance()<0){
+    if (faultTolerance() < 0)
+    {
         errorExit("ERROR :: While running fault tolerance");
     }
 
@@ -462,8 +492,13 @@ int main(int argc, char *argv[])
 
         // Lock the queue and add the client socket for grading
         pthread_mutex_lock(&clientQueueLock);
-        
-        enqueue(&clientQueue, clientSockFD);
+        // printf("DEBUG 1 :: ENQUEUEING CLIENT SOCK FD\n");
+        if (enqueue(&clientQueue, clientSockFD) < 0)
+        {
+            closeSocket(clientSockFD);
+            pthread_mutex_unlock(&clientQueueLock);
+            errorContinue("Enqueue Error");
+        };
 
         // Signal to wake up a waiting thread
         pthread_cond_signal(&clientQueueCond);
