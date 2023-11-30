@@ -10,7 +10,7 @@ fi
 server_address=$1
 file_to_grade=$2
 
-echo"Running Makefile"
+echo "Running Makefile"
 make
 
 # Step 1: Send the file for grading and get the request ID

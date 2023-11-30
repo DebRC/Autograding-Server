@@ -16,7 +16,7 @@ total_time=0
 
 # Run load tests in the background
 for ((i=1; i<=$n; i++)); do
-    ./single_loadtest.sh "$server_address" "$file_to_grade" > "logs/time_taken_$i.txt" &
+    bash single_loadtest.sh "$server_address" "$file_to_grade" > "client_logs/time_taken_$i.txt" &
 done
 
 # Wait for all background processes to finish
