@@ -13,12 +13,6 @@ mkdir -p logs
 mkdir -p logs/files
 mkdir -p logs/outputs
 
-echo "Creating Required Files ... "
-# Check if file exists
-if [ ! -e "request_status.csv" ]; then
-    touch "$filename"
-fi
-
 echo "Running Make File ... "
 make
 
