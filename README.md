@@ -20,7 +20,7 @@ A client-side application was also developed to facilitate the submission of C++
 ## How to Run?
 - Single Threaded Server (v1)
   * Server
-    * ``` bash runServer.sh < PortNum > ```
+    * ``` bash run_server.sh < PortNum > ```
   * Client
     * ``` gcc -o client gradingclient.c ```
     * ``` ./client < IP:Port > < testFile > < numOfLoop > < sleepTime > ```
@@ -29,7 +29,7 @@ A client-side application was also developed to facilitate the submission of C++
    
 - Multi Threaded Server [Without Thread Pool] (v2)
   * Server
-    * ``` bash runServer.sh < PortNum > ```
+    * ``` bash run_server.sh < PortNum > ```
   * Client
     * ``` gcc -o client gradingclient.c ```
     * ``` ./client < IP:Port > < testFile > < numOfLoop > < sleepTime > < timeOut > ```
@@ -38,8 +38,7 @@ A client-side application was also developed to facilitate the submission of C++
    
 - Multi Threaded Server [With Thread Pool] (v3)
   * Server
-    * ``` make ```
-    * ``` bash runServer.sh < NumberOfCores > < PortNum > < ThreadPoolSize > ```
+    * ``` bash run_server.sh < NumberOfCores > < PortNum > < ThreadPoolSize > ```
   * Client
     * ``` make ```
     * ``` ./client < IP:Port > < testFile > < numOfLoop > < sleepTime > < timeOut > ```
@@ -48,7 +47,6 @@ A client-side application was also developed to facilitate the submission of C++
    
 - Asynchronous Server (v4)
   * Server
-    * ``` make ```
     * ``` bash run_server.sh < numberOfCores > < portNum > < threadPoolSize > ```
   * Client
     * ``` make ```
