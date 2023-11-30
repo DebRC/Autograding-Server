@@ -6,7 +6,7 @@ if [ $# -ne 3 ]; then
     exit 1
 fi
 
-mkdir -p logs
+mkdir -p client_logs
 
 server_address=$1
 file_to_grade=$2
@@ -24,7 +24,7 @@ wait
 
 # Calculate the total time taken
 for ((i=1; i<=$n; i++)); do
-    time_taken=$(cat "logs/time_taken_$i.txt" | grep -o 'Time taken for grading: [0-9]*' | awk '{print $NF}')
+    time_taken=$(cat "client_logs/time_taken_$i.txt" | grep -o 'Time taken for grading: [0-9]*' | awk '{print $NF}')
     # echo $time_taken
     total_time=$((total_time + time_taken))
 done
