@@ -2,7 +2,7 @@
 
 # Checcking for correct arguments
 if [ $# -ne 5 ];then
-    echo "usage: ./client_run.sh <IP:Port> <testFile> <numClients> <numOfLoop> <sleepTime> "
+    echo "usage: ./client_run.sh <IP:Port> <testFile> <numClients> <numOfLoop> <sleepTime>"
 fi
 
 # initializing the variables with command line inputs

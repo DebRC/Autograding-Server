@@ -45,9 +45,11 @@ for ((num=1; num<=$numOfClient; num++)); do
     # Use grep and awk to search and extract the float value
     if grep -q "Average response time" "$file_name"; then
         client_avg_response_time=$(grep "Average response time" "$file_name" | awk '{print $4}')
+        # echo "Client Average response time: $client_avg_response_time"
     fi
     if grep -q "The number of Successful response" "$file_name"; then
         num_of_response=$(grep "The number of Successful response" "$file_name" | awk '{print $6}')
+        # echo "Number of Successful response: $num_of_response"
     fi
 
     # calculating the overall response time
@@ -65,6 +67,7 @@ else
     avgResponseTime=$(echo "scale=6; $overall_response_time / $total_response" | bc -l)
 fi
 echo "Average response time: $avgResponseTime"
+echo "Total Successful response: $total_response"
 
 
 
@@ -76,10 +79,12 @@ for ((num=1; num<=$numOfClient; num++)); do
     # Use grep and awk to search and extract the float value
     if grep -q "The number of Successful response" "$file_name"; then
         num_of_response=$(grep "The number of Successful response" "$file_name" | awk '{print $6}')
+        # echo "Number of Successful response: $num_of_response"
     fi
 
     if grep -q "Total time for completing the loop" "$file_name"; then
         loop_time=$(grep "Total time for completing the loop" "$file_name" | awk '{print $7}')
+        # echo "Loop time: $loop_time"
     fi
 
     # To avoid divide by zero exception
@@ -90,6 +95,7 @@ for ((num=1; num<=$numOfClient; num++)); do
     fi
     overall_throughput=$(echo "scale=6; $overall_throughput + $ind_throughput" | bc -l) # calculating the overall throughput
 done
+
 
 echo "Overall throughput: $overall_throughput"
 

@@ -1,3 +1,20 @@
-logs/files/file4.cpp:136:1: warning: null character(s) ignored
-  136 |  
+logs/files/file4.cpp:11:1: warning: null character(s) ignored
+   11 |  
       | ^
+logs/files/file4.cpp: In function ‘int main()’:
+logs/files/file4.cpp:6:9: error: ‘cout’ was not declared in this scope; did you mean ‘std::cout’?
+    6 |         cout << i <<" ";
+      |         ^~~~
+      |         std::cout
+In file included from logs/files/file4.cpp:1:
+/usr/include/c++/11/iostream:61:18: note: ‘std::cout’ declared here
+   61 |   extern ostream cout;          /// Linked to standard output
+      |                  ^~~~
+logs/files/file4.cpp:8:5: error: ‘cout’ was not declared in this scope; did you mean ‘std::cout’?
+    8 |     cout << count;
+      |     ^~~~
+      |     std::cout
+In file included from logs/files/file4.cpp:1:
+/usr/include/c++/11/iostream:61:18: note: ‘std::cout’ declared here
+   61 |   extern ostream cout;          /// Linked to standard output
+      |                  ^~~~
