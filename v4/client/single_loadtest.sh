@@ -21,6 +21,9 @@ echo "File sent for grading. Request ID: $request_id"
 
 start_time=$(date +%s)
 
+tries=0
+max_tries=50
+
 # Step 2: Continuously ask for the status
 while true; do
     status_response=$(./client status $server_address $request_id)
@@ -34,7 +37,11 @@ while true; do
     fi
     
     # Add a delay before the next status request
-    sleep 0.5
+    sleep 2
+    tries=$((tries+1))
+    if [ $tries -eq $max_tries ]; then
+        exit 1
+    fi
 done
 
 end_time=$(date +%s)
