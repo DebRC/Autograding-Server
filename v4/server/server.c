@@ -271,7 +271,6 @@ int checkStatusRequest(int clientSockFD, int requestID)
         else if (strcmp(status, "4") == 0)
         {
             char *outputDiffFileName = make_output_diff_filename(requestID);
-            printf("File Name--%s\n", outputDiffFileName);
             n = send_file(clientSockFD, outputDiffFileName);
             free(outputDiffFileName);
         }
