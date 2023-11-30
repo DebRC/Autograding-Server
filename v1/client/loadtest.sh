@@ -67,7 +67,7 @@ else
     avgResponseTime=$(echo "scale=6; $overall_response_time / $total_response" | bc -l)
 fi
 echo "Average response time: $avgResponseTime"
-echo "Succcesfull response: $total_response"
+echo "Total Successful response: $total_response"
 
 
 
