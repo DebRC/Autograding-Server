@@ -30,6 +30,10 @@ total_response=0
 # run the utilizatoin script in the background
 bash utilizationScript.sh 8080 &
 
+# compiling the client
+echo "Running Makefile"
+make
+
 # Executing the client
 for ((num=1; num<=$numOfClient; num++)); do
     output_file="output_$num.txt"
