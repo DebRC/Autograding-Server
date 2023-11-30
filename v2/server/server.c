@@ -281,7 +281,7 @@ void *grader(void *arg)
         free(programFileName);
         errorExitThread("ERROR :: FILE RECV ERROR",clientSockFD);
     }
-    n = send(clientSockFD, "I got your code file for grading\n", 33, 0);    // send the confirmation to the client
+    n = send(clientSockFD, "I got your code file for grading\n", BUFFER_SIZE, 0);    // send the confirmation to the client
     if (n < 0)
     {
         free(programFileName);
