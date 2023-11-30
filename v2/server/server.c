@@ -12,7 +12,7 @@
 // defining the constants used
 #define BUFFER_SIZE 1024
 #define MAX_FILE_SIZE_BYTES 4
-#define MAX_CLIENTS 10
+#define MAX_CLIENTS 20
 
 #define error(msg)   \
     {                \
@@ -281,7 +281,7 @@ void *grader(void *arg)
         free(programFileName);
         errorExitThread("ERROR :: FILE RECV ERROR",clientSockFD);
     }
-    n = send(clientSockFD, "I got your code file for grading\n", 33, 0);    // send the confirmation to the client
+    n = send(clientSockFD, "I got your code file for grading\n", BUFFER_SIZE, 0);    // send the confirmation to the client
     if (n < 0)
     {
         free(programFileName);
@@ -302,8 +302,8 @@ void *grader(void *arg)
     // Checking if source file successfully compiled or not
     if (system(compileCommand) != 0)
     {
-        n = send(clientSockFD, "COMPILER ERROR", 15, 0);    // send feedback to the client
-        sleep(1);
+        n = send(clientSockFD, "COMPILER ERROR", BUFFER_SIZE, 0);    // send feedback to the client
+        //sleep(1);
         if (n >= 0){
             n=send_file(clientSockFD, compileOutputFileName);   // send the error to the client
         }
@@ -313,7 +313,7 @@ void *grader(void *arg)
     // Checking if the source file is successfully execute or not
     else if (system(runCommand) != 0)     
     {
-        n = send(clientSockFD, "RUNTIME ERROR", 14, 0); // send feedback to the client
+        n = send(clientSockFD, "RUNTIME ERROR", BUFFER_SIZE, 0); // send feedback to the client
         if (n >= 0)
             n=send_file(clientSockFD, runtimeOutputFileName);   // send the error to the client
     }
@@ -321,12 +321,12 @@ void *grader(void *arg)
     {
         // checking for output error 
         if(system(outputCheckCommand)!=0){
-            n = send(clientSockFD, "OUTPUT ERROR", 14, 0);
+            n = send(clientSockFD, "OUTPUT ERROR", BUFFER_SIZE, 0);
             if (n >= 0)
                 n=send_file(clientSockFD, outputDiffFileName);  // sending the output error to the client
         }
         else{
-            n = send(clientSockFD, "PROGRAM RAN", 12, 0);
+            n = send(clientSockFD, "PROGRAM RAN", BUFFER_SIZE, 0);
         }
     }
 

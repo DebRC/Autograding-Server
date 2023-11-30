@@ -19,7 +19,7 @@ mkdir -p client_logs
 mkdir -p client_logs/$numOfClient
 
 # running the utilization script in the background
-bash utilizationScript.sh 8080 &
+bash utilization_script.sh 8080 &
 
 # Initialize all the varibales needed
 totalResponseTime=0.00
@@ -29,6 +29,8 @@ overall_error_rate=0.00
 overall_request_rate=0.00
 overall_timeout_rate=0.00
 total_response=0
+
+gcc -o client gradingclient.c
 
 # Executing the client
 for ((num=1; num<=$numOfClient; num++)); do
@@ -42,7 +44,7 @@ for ((i=1; i<=$numOfClient; i++)); do
     wait "${pids[$i]}"
 done
 
-PID=$(ps -eLf | grep utilizationScript.sh | head -1 | awk '{print $2}')
+PID=$(ps -eLf | grep utilization_script.sh | head -1 | awk '{print $2}')
 # echo "PID: $PID"
 kill -9 $PID  &> /dev/null 
 
@@ -145,7 +147,7 @@ for ((num=1; num<=$numOfClient; num++)); do
     overall_request_rate=$(echo "scale=2; $overall_request_rate + $ind_request_rate" | bc -l)
 done
 
-echo "Overall Request Rate(Goodput): $overall_request_rate"
+echo "Sucessful Request Rate(Goodput): $overall_request_rate"
 
 
 
@@ -184,7 +186,7 @@ for ((num=1; num<=$numOfClient; num++)); do
 done
 
 echo "Total errors: $total_error"
-echo "Overall Error Rate: $overall_error_rate"
+echo "Error Rate: $overall_error_rate"
 
 
 
@@ -223,7 +225,7 @@ for ((num=1; num<=$numOfClient; num++)); do
 done
 
 echo "Total timeouts: $total_time_out"
-echo "Overall Timeout Rate: $overall_timeout_rate"
+echo "Timeout Rate: $overall_timeout_rate"
 
 
 
@@ -231,7 +233,7 @@ echo "Overall Timeout Rate: $overall_timeout_rate"
 
 # CALCULATING THE REQUEST RATE SENT
 request_rate_sent=$(echo "scale=2; $overall_timeout_rate + $overall_error_rate + $overall_throughput" | bc -l)
-echo "Overall Request Rate Sent: $request_rate_sent"
+echo "Request Rate Sent: $request_rate_sent"
 
 
 
