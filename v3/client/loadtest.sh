@@ -28,7 +28,7 @@ overall_timeout_rate=0.00
 total_response=0
 
 # run the utilizatoin script in the background
-bash utilizationScript.sh 8080 &
+bash utilization_script.sh 8080 &
 
 # compiling the client
 echo "Running Makefile"
@@ -47,7 +47,7 @@ for ((i=1; i<=$numOfClient; i++)); do
 done
 
 # stop the utilization script after each client
-PID=$(ps -eLf | grep utilizationScript.sh | head -1 | awk '{print $2}')
+PID=$(ps -eLf | grep utilization_script.sh | head -1 | awk '{print $2}')
 echo "PID: $PID"
 kill -9 $PID 
 
