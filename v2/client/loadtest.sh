@@ -30,6 +30,8 @@ overall_request_rate=0.00
 overall_timeout_rate=0.00
 total_response=0
 
+gcc -o client gradingclient.c
+
 # Executing the client
 for ((num=1; num<=$numOfClient; num++)); do
     output_file="output_$num.txt"

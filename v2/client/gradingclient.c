@@ -137,7 +137,7 @@ int main(int argc, char* argv[]) {
                 break;
             }
             else {
-                sleep(1);
+                sleep(2);
                 tries += 1;
                 if (tries == MAX_TRIES) {
                     printf("Server not responding\n");
