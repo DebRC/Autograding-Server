@@ -10,6 +10,9 @@ fi
 server_address=$1
 file_to_grade=$2
 
+echo "Running Makefile"
+make
+
 # Step 1: Send the file for grading and get the request ID
 response=$(./client new $server_address $file_to_grade)
 request_id=$(echo "$response" | grep -o 'Your RequestID is : [0-9]*' | awk '{print $NF}')

@@ -271,7 +271,6 @@ int checkStatusRequest(int clientSockFD, int requestID)
         else if (strcmp(status, "4") == 0)
         {
             char *outputDiffFileName = make_output_diff_filename(requestID);
-            printf("File Name--%s\n", outputDiffFileName);
             n = send_file(clientSockFD, outputDiffFileName);
             free(outputDiffFileName);
         }
@@ -309,7 +308,7 @@ void *handleClients(void *arg)
             pthread_mutex_unlock(&clientQueueLock);
             errorContinue("Dequeue Error");
         }
-        printf("\n%s\n", clientSockFD);
+        // printf("\n%s\n", clientSockFD);
         pthread_mutex_unlock(&clientQueueLock);
 
         char buffer[BUFFER_SIZE];
